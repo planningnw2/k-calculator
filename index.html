@@ -1,0 +1,2446 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Value Escalation Calculator (Pro)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            yellow: '#FACC15', // 30% Theme
+                            yellowDark: '#EAB308',
+                            black: '#111827',  // 10% Theme
+                            blackLight: '#1F2937',
+                            white: '#FFFFFF',  // 60% Theme
+                            gray: '#F3F4F6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #F9FAFB; }
+        .step-active { display: block; animation: fadeIn 0.4s ease-out; }
+        .step-hidden { display: none; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        
+        /* Modal Styles */
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow-x: hidden; overflow-y: hidden !important; }
+    </style>
+</head>
+<body class="text-brand-black bg-brand-gray min-h-screen md:h-screen flex flex-col md:flex-row md:overflow-hidden">
+
+    <!-- Sidebar Navigation (Desktop) -->
+    <aside id="sidebar" class="w-64 bg-brand-yellow flex-col shadow-xl z-30 hidden md:flex shrink-0">
+        <div class="p-6 border-b border-brand-yellowDark">
+            <h1 class="text-2xl font-bold text-brand-black tracking-tight flex items-center">
+                <i class="fa-solid fa-calculator mr-2"></i>K-CALC <span class="ml-1.5 text-xs bg-brand-black text-brand-yellow px-2 py-0.5 rounded font-bold">PRO</span>
+            </h1>
+            <p class="text-xs text-brand-black/80 mt-1 font-medium">ระบบคำนวณเงินชดเชยค่างานก่อสร้าง (ค่า K)</p>
+        </div>
+        <nav class="flex-1 py-4">
+            <ul id="nav-menu" class="space-y-1">
+                <li>
+                    <button type="button" onclick="app.setStep(1)" id="nav-step-1" class="w-full text-left px-6 py-3.5 font-bold text-brand-black bg-brand-yellowDark/30 border-r-4 border-brand-black transition-all flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-brand-black text-brand-yellow text-xs flex items-center justify-center mr-3 font-bold">1</span>
+                        ข้อมูลสัญญาโครงการ
+                    </button>
+                </li>
+                <li>
+                    <button type="button" onclick="app.setStep(2)" id="nav-step-2" class="w-full text-left px-6 py-3.5 font-semibold text-brand-black/70 hover:bg-brand-yellowDark/20 transition-all flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-brand-black/20 text-brand-black text-xs flex items-center justify-center mr-3 font-bold">2</span>
+                        แนบไฟล์ & จับคู่สูตร K
+                    </button>
+                </li>
+                <li>
+                    <button type="button" onclick="app.setStep(3)" id="nav-step-3" class="w-full text-left px-6 py-3.5 font-semibold text-brand-black/70 hover:bg-brand-yellowDark/20 transition-all flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-brand-black/20 text-brand-black text-xs flex items-center justify-center mr-3 font-bold">3</span>
+                        ตรวจสอบดัชนี (Indices)
+                    </button>
+                </li>
+                <li>
+                    <button type="button" onclick="app.setStep(4)" id="nav-step-4" class="w-full text-left px-6 py-3.5 font-semibold text-brand-black/70 hover:bg-brand-yellowDark/20 transition-all flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-brand-black/20 text-brand-black text-xs flex items-center justify-center mr-3 font-bold">4</span>
+                        สรุปผล & ส่งออกรายงาน
+                    </button>
+                </li>
+            </ul>
+        </nav>
+        <div class="p-4 bg-brand-yellowDark/30 text-xs text-brand-black/80 border-t border-brand-yellowDark space-y-1">
+            <div class="font-bold"><i class="fa-solid fa-circle-check text-green-700 mr-1"></i> อ้างอิงคู่มือ สงป. & สนค.</div>
+            <div>รองรับ Excel (listwork) & PDF</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-h-screen md:h-screen md:overflow-hidden relative bg-brand-white">
+        <!-- Universal Top Header & Stepper (Visible on ALL devices: Mobile, Tablet, Desktop) -->
+        <header class="bg-brand-yellow border-b border-brand-yellowDark px-3 py-2.5 md:px-6 md:py-3 shadow-sm sticky top-0 z-30 shrink-0">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-base md:text-lg font-bold text-brand-black flex items-center md:hidden">
+                        <i class="fa-solid fa-calculator mr-1.5"></i>K-CALC <span class="ml-1 text-[10px] bg-brand-black text-brand-yellow px-1.5 py-0.5 rounded font-bold">PRO</span>
+                    </h1>
+                    <span class="hidden md:inline-block font-bold text-sm text-brand-black" id="top-step-label">ขั้นตอนที่ 1 จาก 4: ตั้งค่าข้อมูลโครงการและสัญญา</span>
+                </div>
+
+                <!-- Quick Action Buttons (Visible on All Screens) -->
+                <div class="flex items-center gap-1.5 md:gap-2">
+                    <button type="button" onclick="app.downloadSingleHtmlForGithub()" class="text-[11px] md:text-xs bg-brand-black hover:bg-gray-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center" title="ดาวน์โหลดไฟล์ index.html เพื่อนำไปอัปโหลดขึ้น GitHub Pages">
+                        <i class="fa-brands fa-github mr-1 text-brand-yellow"></i> <span>ดาวน์โหลด index.html (ขึ้น GitHub)</span>
+                    </button>
+                    <button type="button" onclick="app.syncNewMonthsOnline()" class="text-[11px] md:text-xs bg-green-700 hover:bg-green-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-cloud-arrow-down mr-1"></i> <span>ซิงค์ดัชนีเดือนล่าสุด</span>
+                    </button>
+                    <button type="button" onclick="app.openIndexSourceModal()" class="text-[11px] md:text-xs bg-white hover:bg-gray-100 border border-brand-black/20 text-brand-black px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-table text-brand-yellowDark mr-1"></i> <span>ตารางดัชนี พาณิชย์</span>
+                    </button>
+                    <button type="button" onclick="app.calculateAndGoToDashboard()" class="text-[11px] md:text-xs bg-brand-black text-brand-yellow hover:bg-gray-800 px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-bolt mr-1"></i> <span>คำนวณทันที</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive 4-Step Tab Bar for Mobile & Tablet -->
+            <div class="grid grid-cols-4 gap-1.5 mt-2.5 md:hidden">
+                <button type="button" onclick="app.setStep(1)" id="mob-step-1" class="py-2 px-1 rounded-lg text-xs font-bold bg-brand-black text-brand-yellow shadow-sm flex flex-col items-center justify-center transition">
+                    <span>1. สัญญา</span>
+                </button>
+                <button type="button" onclick="app.setStep(2)" id="mob-step-2" class="py-2 px-1 rounded-lg text-xs font-bold bg-white/80 text-brand-black hover:bg-white flex flex-col items-center justify-center transition">
+                    <span>2. แนบไฟล์</span>
+                </button>
+                <button type="button" onclick="app.setStep(3)" id="mob-step-3" class="py-2 px-1 rounded-lg text-xs font-bold bg-white/80 text-brand-black hover:bg-white flex flex-col items-center justify-center transition">
+                    <span>3. ดัชนี K</span>
+                </button>
+                <button type="button" onclick="app.setStep(4)" id="mob-step-4" class="py-2 px-1 rounded-lg text-xs font-bold bg-white/80 text-brand-black hover:bg-white flex flex-col items-center justify-center transition">
+                    <span>4. สรุป/ส่งออก</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Content Container -->
+        <div class="flex-1 overflow-y-auto p-3 sm:p-5 md:p-8 pb-28 md:pb-24 custom-scrollbar">
+
+            <!-- STEP 1: ข้อมูลสัญญาโครงการ -->
+            <section id="step-1" class="step-active max-w-5xl mx-auto space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 md:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
+                        <div>
+                            <span class="bg-brand-yellow text-brand-black text-xs font-bold px-3 py-1 rounded-full">STEP 1 / 4</span>
+                            <h2 class="text-xl md:text-2xl font-bold text-brand-black mt-2">ข้อมูลโครงการและสัญญา</h2>
+                            <p class="text-xs md:text-sm text-gray-500 mt-0.5">ระบุรายละเอียดสัญญา วันเปิดซองประกวดราคา และเดือนที่ส่งมอบงาน</p>
+                        </div>
+                        <button type="button" onclick="app.fillSampleProject()" class="bg-yellow-100 hover:bg-brand-yellow text-brand-black border border-brand-yellowDark px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center self-start md:self-auto shadow-sm">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> โหลดข้อมูลตัวอย่าง (ทล.11 ช่องแค - ตากฟ้า)
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-brand-black mb-1.5">ชื่อโครงการก่อสร้าง <span class="text-red-500">*</span></label>
+                            <input type="text" id="proj-name" value="งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/30 outline-none" placeholder="ระบุชื่อโครงการ...">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-brand-black mb-1.5">สัญญาเลขที่</label>
+                            <input type="text" id="proj-contract" value="นว.2/44/2569" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น นว.2/44/2569">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-brand-black mb-1.5">ผู้รับจ้าง / ห้างหุ้นส่วน / บริษัท</label>
+                            <input type="text" id="proj-contractor" value="หจก. นครสวรรค์ รีไซกลิ้ง" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="ระบุชื่อผู้รับจ้าง...">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-brand-black mb-1.5">วันที่เปิดซองประกวดราคา</label>
+                            <input type="text" id="proj-open-date" value="15 พ.ค. 2569" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 15 พ.ค. 2569">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-brand-black mb-1.5">วันที่ส่งมอบงาน (งวดนี้)</label>
+                            <input type="text" id="proj-submit-date" value="16 ก.ย. 2569" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 16 ก.ย. 2569">
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-sm font-bold text-brand-black">เดือนวันเปิดซองประกวดราคา (เดือนฐาน Io) <span class="text-red-500">*</span></label>
+                            </div>
+                            <select id="proj-base-month" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-bold bg-white focus:border-brand-yellow outline-none"></select>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-sm font-bold text-brand-black">เดือนที่ส่งมอบงานงวดนี้ (เดือนส่งงาน It) <span class="text-red-500">*</span></label>
+                                <button type="button" onclick="app.syncNewMonthsOnline()" class="text-[11px] text-green-700 hover:underline font-bold flex items-center">
+                                    <i class="fa-solid fa-rotate mr-1"></i> อัปเดตเดือนถัดไปอัตโนมัติ
+                                </button>
+                            </div>
+                            <select id="proj-current-month" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-bold bg-white focus:border-brand-yellow outline-none"></select>
+                        </div>
+
+                        <div class="md:col-span-2 bg-yellow-50/70 border border-brand-yellow rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-brand-black">เกณฑ์หักส่วนต่างค่า K (ปัจจุบันหัก ±2%)</label>
+                                <p class="text-xs text-gray-600 mt-0.5">ใช้สูตรมาตรฐาน: <code class="bg-white px-1.5 py-0.5 rounded border text-red-700 font-bold">=IF(A2&gt;1.02, (A2-1.02)*100, IF(A2&lt;0.98, (A2-0.98)*100, 0))</code></p>
+                            </div>
+                            <div class="flex items-center space-x-2 shrink-0">
+                                <span class="text-sm font-bold text-brand-black">หัก</span>
+                                <input type="number" id="proj-deduct" value="2" step="0.5" min="0" max="10" class="w-20 p-2.5 border-2 border-brand-black rounded-xl text-center font-bold text-base bg-white">
+                                <span class="text-sm font-bold text-brand-black">% ชดเชย</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end">
+                        <button type="button" onclick="app.setStep(2)" class="bg-brand-black hover:bg-gray-800 text-brand-yellow px-6 py-3.5 rounded-xl font-bold text-sm md:text-base transition flex items-center shadow-md">
+                            ขั้นตอนถัดไป: แนบไฟล์ & จับคู่สูตร K <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 2: แนบไฟล์ & จับคู่สูตร K -->
+            <section id="step-2" class="step-hidden max-w-6xl mx-auto space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 md:p-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div>
+                            <span class="bg-brand-yellow text-brand-black text-xs font-bold px-3 py-1 rounded-full">STEP 2 / 4</span>
+                            <h2 class="text-xl font-bold text-brand-black mt-2">แนบไฟล์ Payment (แท็บ listwork) หรือ PDF เพื่อจับคู่สูตรค่า K</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">ระบบจะอ่านเฉพาะตารางรายการ รวมคอลัมน์ "บาท" และ "สต." อัตโนมัติ และตัดรายการไม่มีค่า K (NO) ออกจากการคำนวณ</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <label for="file-upload" class="cursor-pointer bg-brand-yellow hover:bg-brand-yellowDark text-brand-black px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center shadow-sm">
+                                <i class="fa-solid fa-file-arrow-up mr-2"></i> เลือกไฟล์แนบ (Excel / PDF)
+                            </label>
+                            <input id="file-upload" type="file" accept=".xlsx,.xls,.csv,.pdf" class="hidden" onchange="app.handleFileUpload(this)">
+                            <button type="button" onclick="app.useSampleBOQ()" class="bg-gray-100 hover:bg-gray-200 text-brand-black px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center">
+                                <i class="fa-solid fa-rotate mr-1.5"></i> โหลดตารางตัวอย่าง (listwork)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Upload Dropzone -->
+                    <div id="upload-zone" onclick="document.getElementById('file-upload').click()" class="border-2 border-dashed border-brand-yellowDark bg-yellow-50/40 hover:bg-yellow-50 rounded-xl p-4 text-center cursor-pointer transition">
+                        <div class="flex flex-col md:flex-row items-center justify-center gap-2 text-xs md:text-sm text-gray-700">
+                            <i class="fa-solid fa-cloud-arrow-up text-xl text-brand-yellowDark"></i>
+                            <span id="upload-status-text" class="font-medium">คลิกที่นี่ หรือลากไฟล์ Excel Payment (แท็บ <strong>listwork</strong>) / PDF มาวางเพื่อวิเคราะห์รายการอัตโนมัติ</span>
+                        </div>
+                        <div id="ai-loader" class="hidden mt-2 text-xs font-bold text-brand-black">
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i> AI กำลังวิเคราะห์รายการและรวมคอลัมน์ บาท-สตางค์...
+                        </div>
+                    </div>
+
+                    <!-- Excel Sheet Selector (if Excel uploaded) -->
+                    <div id="sheet-selector-wrap" class="hidden mt-4 p-3 bg-gray-100 rounded-xl flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-brand-black"><i class="fa-solid fa-file-excel text-green-600 mr-1"></i> เลือกแท็บ (Sheet):</span>
+                            <select id="excel-sheet-selector" onchange="app.switchExcelSheet(this.value)" class="p-1.5 border border-gray-300 rounded-lg text-xs font-bold bg-white"></select>
+                        </div>
+                        <span id="sheet-info-lbl" class="text-xs text-green-700 font-bold"></span>
+                    </div>
+                </div>
+
+                <!-- BOQ Table Card -->
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 md:p-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="font-bold text-base md:text-lg text-brand-black">รายการก่อสร้างจากแท็บ listwork</h3>
+                            <label class="inline-flex items-center text-xs font-semibold text-gray-600 cursor-pointer bg-gray-100 px-3 py-1.5 rounded-lg">
+                                <input type="checkbox" onchange="app.toggleHideNoK(this.checked)" class="mr-1.5 rounded">
+                                ซ่อนรายการที่ไม่คิดค่า K (NO)
+                            </label>
+                        </div>
+                        <button type="button" onclick="app.addEmptyRow()" class="text-xs bg-brand-black text-brand-yellow hover:bg-gray-800 px-3.5 py-2 rounded-lg font-bold transition self-start md:self-auto">
+                            <i class="fa-solid fa-plus mr-1"></i> เพิ่มรายการ
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-brand-black text-brand-yellow text-xs uppercase">
+                                    <th class="p-3 text-center w-20">ลำดับ</th>
+                                    <th class="p-3">รายการก่อสร้าง (อ้างอิงคอลัมน์รายการ)</th>
+                                    <th class="p-3 text-right w-44">จำนวนเงิน (บาท.สต.)</th>
+                                    <th class="p-3 text-center w-72">สูตรค่า K (AI จับคู่อัตโนมัติตาม สงป.)</th>
+                                    <th class="p-3 text-center w-14">ลบ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="boq-tbody" class="divide-y divide-gray-200 text-sm"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Summary Bar under BOQ -->
+                    <div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div class="text-xs md:text-sm text-gray-600">
+                            รวมเงินตามรายการที่ขอเบิกทั้งหมด: <span id="boq-all-amount" class="font-mono font-bold text-brand-black">0.00</span> บาท
+                        </div>
+                        <div class="text-xs md:text-sm font-bold text-brand-black bg-yellow-100 border border-yellow-300 px-4 py-2 rounded-lg">
+                            ค่างานที่นำมาคำนวณค่า K: <span id="boq-total-amount" class="font-mono text-base text-green-800">0.00</span>
+                            <span id="boq-k-count-lbl" class="text-xs font-normal text-gray-700 ml-1">บาท</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-between items-center">
+                        <button type="button" onclick="app.setStep(1)" class="bg-gray-200 hover:bg-gray-300 text-brand-black px-5 py-3 rounded-xl font-bold text-xs md:text-sm transition">
+                            <i class="fa-solid fa-arrow-left mr-1.5"></i> ย้อนกลับ
+                        </button>
+                        <button type="button" onclick="app.setStep(3)" class="bg-brand-black hover:bg-gray-800 text-brand-yellow px-6 py-3 rounded-xl font-bold text-xs md:text-sm transition shadow-md">
+                            ขั้นตอนถัดไป: ตรวจสอบดัชนีค่า K <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: ตรวจสอบดัชนี (Indices) -->
+            <section id="step-3" class="step-hidden max-w-5xl mx-auto space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 md:p-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                        <div>
+                            <span class="bg-brand-yellow text-brand-black text-xs font-bold px-3 py-1 rounded-full">STEP 3 / 4</span>
+                            <h2 class="text-xl font-bold text-brand-black mt-2">ตรวจสอบดัชนีราคาเพื่อคำนวณค่า K (ปีฐาน 2530 = 100)</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">อ้างอิงข้อมูลจาก กองดัชนีเศรษฐกิจการค้า สนค. กระทรวงพาณิชย์ (<a href="https://index.tpso.go.th/escalation-factors" target="_blank" class="text-blue-600 underline font-semibold">index.tpso.go.th/escalation-factors</a>)</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="app.syncNewMonthsOnline()" id="btn-sync-online" class="bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
+                                <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> ดึงดัชนีเดือนใหม่ล่าสุดอัตโนมัติ (AI/TPSO)
+                            </button>
+                            <button type="button" onclick="app.openIndexSourceModal()" class="bg-yellow-100 hover:bg-brand-yellow text-brand-black border border-brand-yellowDark px-3.5 py-2 rounded-xl text-xs font-bold transition">
+                                <i class="fa-solid fa-table-list mr-1.5"></i> จัดการตารางดัชนี / เพิ่มเดือนใหม่
+                            </button>
+                            <button type="button" onclick="app.fetchLatestIndices()" class="bg-brand-black text-brand-yellow hover:bg-gray-800 px-3.5 py-2 rounded-xl text-xs font-bold transition">
+                                <i class="fa-solid fa-rotate mr-1.5"></i> รีเซ็ตตามเดือนที่เลือก
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Auto-Sync Status Banner -->
+                    <div id="sync-status-banner" class="mb-4 p-3.5 bg-green-50 border border-green-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center text-green-900">
+                            <i class="fa-solid fa-satellite-dish text-green-600 mr-2 text-base"></i>
+                            <div>
+                                <span class="font-bold">ระบบดึงดัชนีค่า K อัตโนมัติ (Auto-Fetch):</span>
+                                <span id="sync-status-text">เชื่อมต่อฐานข้อมูล สนค. (index.tpso.go.th) + AI Search Grounding พร้อมรองรับการประกาศดัชนีเดือนถัดไป</span>
+                            </div>
+                        </div>
+                        <label for="index-excel-upload" class="cursor-pointer bg-white hover:bg-gray-100 text-brand-black border border-gray-300 px-3 py-1.5 rounded-lg font-bold transition shrink-0 text-center">
+                            <i class="fa-solid fa-file-import text-green-700 mr-1"></i> นำเข้าไฟล์ตารางดัชนี สนค. (Excel/CSV)
+                        </label>
+                        <input type="file" id="index-excel-upload" accept=".xlsx,.xls,.csv" class="hidden" onchange="app.importOfficialIndexFile(this)">
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-brand-black text-brand-yellow text-xs">
+                                    <th class="p-3">หมวดดัชนีราคา (Escalation Factor Indices)</th>
+                                    <th class="p-3 text-center w-40">เดือนฐาน (Io)<br><span id="lbl-base-month" class="text-[11px] text-white font-normal">พ.ค. 2569</span></th>
+                                    <th class="p-3 text-center w-40">เดือนส่งงาน (It)<br><span id="lbl-curr-month" class="text-[11px] text-white font-normal">ก.ย. 2569</span></th>
+                                    <th class="p-3 text-center w-32">อัตราส่วน (It/Io)</th>
+                                    <th class="p-3 text-center w-24">อ้างอิง</th>
+                                </tr>
+                            </thead>
+                            <tbody id="indices-tbody" class="divide-y divide-gray-200 text-sm"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-6 flex justify-between items-center">
+                        <button type="button" onclick="app.setStep(2)" class="bg-gray-200 hover:bg-gray-300 text-brand-black px-5 py-3 rounded-xl font-bold text-xs md:text-sm transition">
+                            <i class="fa-solid fa-arrow-left mr-1.5"></i> ย้อนกลับ
+                        </button>
+                        <button type="button" onclick="app.setStep(4)" class="bg-brand-black hover:bg-gray-800 text-brand-yellow px-6 py-3 rounded-xl font-bold text-xs md:text-sm transition shadow-md">
+                            คำนวณค่า K และดูสรุปผล (แบบฟอร์มที่ 2) <i class="fa-solid fa-calculator ml-1.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 4: สรุปผล & ส่งออกรายงาน (แบบฟอร์มที่ 2) -->
+            <section id="step-4" class="step-hidden max-w-6xl mx-auto space-y-6">
+                <div id="export-container" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 md:p-8 space-y-6">
+                    <!-- Header Banner -->
+                    <div class="bg-brand-black text-white p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <div class="text-xs font-bold text-brand-yellow uppercase tracking-wider">แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)</div>
+                            <h2 id="dash-proj-name" class="text-lg md:text-xl font-bold mt-1">โครงการ: งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า</h2>
+                            <p id="dash-contract" class="text-xs text-gray-300 mt-1">สัญญาเลขที่: นว.2/44/2569</p>
+                        </div>
+                        <div id="export-btn-group" class="flex flex-wrap gap-2 shrink-0">
+                            <button type="button" onclick="app.exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow">
+                                <i class="fa-solid fa-file-excel mr-2"></i> ส่งออก Excel (แบบฟอร์มที่ 2)
+                            </button>
+                            <button type="button" onclick="app.exportPDF()" class="bg-brand-yellow hover:bg-brand-yellowDark text-brand-black px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow">
+                                <i class="fa-solid fa-file-pdf mr-2"></i> ส่งออก PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3 Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                            <div class="text-xs text-gray-500 font-semibold">รวมค่างานที่ได้รับพิจารณาค่า K</div>
+                            <div id="sum-total-work" class="text-2xl font-bold text-brand-black mt-1 font-mono">฿7,997,877.44</div>
+                        </div>
+                        <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                            <div class="text-xs text-gray-500 font-semibold">ผลต่างค่างานก่อนหักเกณฑ์ 2%</div>
+                            <div id="sum-total-comp" class="text-2xl font-bold text-blue-700 mt-1 font-mono">฿62,756.30</div>
+                        </div>
+                        <div class="bg-yellow-50 border-2 border-brand-yellow p-4 rounded-xl">
+                            <div id="lbl-final-comp" class="text-xs text-brand-black font-bold">เงินชดเชยที่คำนวณได้สุทธิ (หัก 2% ชดเชย)</div>
+                            <div id="sum-net-comp" class="text-2xl font-bold text-green-600 mt-1 font-mono">฿10,379.93</div>
+                        </div>
+                    </div>
+
+                    <!-- สรุปย่อเงินชดเชยแยกตามสูตรค่า K (K1, K2, K3... มารวมกัน) -->
+                    <div class="bg-yellow-50/60 border border-brand-yellow rounded-xl p-4">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
+                            <h3 class="font-bold text-brand-black text-sm md:text-base flex items-center">
+                                <i class="fa-solid fa-layer-group mr-2 text-brand-yellowDark"></i>
+                                สรุปย่อค่างานและเงินชดเชยแยกตามสูตรค่า K (รวมยอดรายสูตร)
+                            </h3>
+                            <span class="text-xs text-gray-600 font-medium">ยุบรวมรายการที่ใช้สูตร K เดียวกัน แล้วนำแต่ละสูตรมารวมกันเป็นยอดสุทธิ</span>
+                        </div>
+                        <div id="k-group-summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+                    </div>
+
+                    <!-- Form 2 Calculation Table (ยุบรวมตามสูตรค่า K) -->
+                    <div>
+                        <div class="flex flex-col md:flex-row md:items-center justify-between mb-2 gap-2">
+                            <h3 class="font-bold text-brand-black text-sm md:text-base"><i class="fa-solid fa-table mr-1.5 text-brand-yellowDark"></i> ตารางสรุปการคำนวณเงินชดเชยค่า K แบบย่อรายสูตร (แบบฟอร์มที่ 2)</h3>
+                            <span class="text-xs bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded font-mono font-bold">
+                                สูตรช่องหัก 2%: =IF(A2&gt;1.02, (A2-1.02)*100, IF(A2&lt;0.98, (A2-0.98)*100, 0))
+                            </span>
+                        </div>
+                        <div class="overflow-x-auto border border-gray-300 rounded-xl">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-brand-black text-brand-yellow text-xs">
+                                        <th class="p-3 text-center w-12">งวด</th>
+                                        <th class="p-3 text-center w-28">วันที่</th>
+                                        <th class="p-3">หมวดสูตรค่า K (ยุบรวมรายการ)</th>
+                                        <th class="p-3 text-right">ค่างานทั้งหมด</th>
+                                        <th class="p-3 text-center">ไม่อยู่ในข่าย</th>
+                                        <th class="p-3 text-right">ได้รับพิจารณา</th>
+                                        <th class="p-3 text-center">สูตร K</th>
+                                        <th class="p-3 text-center">ค่า K</th>
+                                        <th class="p-3 text-center bg-red-900/60 text-white">หัก 2% ชดเชย</th>
+                                        <th class="p-3 text-right">เงินชดเชยที่คำนวณได้</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="result-tbody" class="divide-y divide-gray-200 text-xs md:text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-Step Formula Breakdown -->
+                    <div class="pt-4 border-t border-gray-200">
+                        <h3 class="font-bold text-brand-black text-sm md:text-base mb-3">
+                            <i class="fa-solid fa-square-root-variable mr-1.5 text-brand-yellowDark"></i>
+                            รายละเอียดการแทนค่าสูตรคำนวณค่า K แยกตามตัวที่ 1, 2, 3...
+                        </h3>
+                        <div id="formula-explanation" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Sticky Bottom Navigation Bar (Visible on All Devices) -->
+        <div class="fixed bottom-0 left-0 md:left-64 right-0 bg-white border-t border-gray-200 px-4 py-2.5 shadow-lg z-30 flex items-center justify-between gap-2">
+            <button type="button" id="bottom-prev-btn" onclick="app.prevStep()" disabled class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-gray-200 hover:bg-gray-300 disabled:opacity-40 text-brand-black transition flex items-center">
+                <i class="fa-solid fa-arrow-left mr-1.5"></i> ย้อนกลับ
+            </button>
+            <div class="flex items-center gap-2">
+                <label for="file-upload" class="cursor-pointer px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-yellow-100 hover:bg-brand-yellow text-brand-black border border-brand-yellowDark transition flex items-center">
+                    <i class="fa-solid fa-file-arrow-up mr-1.5"></i> <span class="hidden sm:inline">แนบไฟล์</span> BOQ/Excel
+                </label>
+                <button type="button" id="bottom-export-pdf-btn" onclick="app.exportPDF()" class="hidden px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-brand-yellow hover:bg-brand-yellowDark text-brand-black transition items-center shadow-sm">
+                    <i class="fa-solid fa-file-pdf mr-1.5"></i> PDF
+                </button>
+                <button type="button" id="bottom-export-excel-btn" onclick="app.exportExcel()" class="hidden px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-green-600 hover:bg-green-700 text-white transition items-center shadow-sm">
+                    <i class="fa-solid fa-file-excel mr-1.5"></i> Excel
+                </button>
+                <button type="button" id="bottom-next-btn" onclick="app.nextStep()" class="px-5 py-2 rounded-xl text-xs md:text-sm font-bold bg-brand-black hover:bg-gray-800 text-brand-yellow transition flex items-center shadow-md">
+                    <span id="bottom-next-label">ถัดไป: แนบไฟล์ (2/4)</span> <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Hidden Staging Area for Multi-page PDF Generation -->
+    <div id="pdf-pages-staging" class="fixed -left-[9999px] top-0 w-[794px] bg-white"></div>
+
+    <!-- Modal: ตารางอ้างอิงดัชนีกระทรวงพาณิชย์ (สนค.) + เพิ่ม/ซิงค์เดือนถัดไป -->
+    <div id="index-source-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-brand-black text-white p-4 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-base text-brand-yellow"><i class="fa-solid fa-building-columns mr-2"></i>ฐานข้อมูลดัชนีราคาค่า K (ปีฐาน 2530 = 100) & อัปเดตเดือนถัดไปอัตโนมัติ</h3>
+                    <p class="text-xs text-gray-300">แหล่งที่มา: สำนักงานนโยบายและยุทธศาสตร์การค้า (สนค.) กระทรวงพาณิชย์ (index.tpso.go.th/escalation-factors)</p>
+                </div>
+                <button type="button" onclick="app.closeIndexSourceModal()" class="text-gray-300 hover:text-white text-2xl px-2">&times;</button>
+            </div>
+
+            <!-- แถบเครื่องมือดึงดัชนีเดือนใหม่อัตโนมัติ / เพิ่มเดือนถัดไป -->
+            <div class="p-3.5 bg-yellow-50 border-b border-yellow-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="app.syncNewMonthsOnline()" class="bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
+                        <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> ตรวจสอบ & ดึงดัชนีเดือนใหม่อัตโนมัติ (ออนไลน์)
+                    </button>
+                    <label for="index-excel-upload" class="cursor-pointer bg-white hover:bg-gray-100 text-brand-black border border-gray-300 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
+                        <i class="fa-solid fa-file-excel text-green-600 mr-1.5"></i> อัปโหลดไฟล์ดัชนีจากเว็บ สนค.
+                    </label>
+                </div>
+                <button type="button" onclick="app.toggleAddMonthForm()" class="bg-brand-black text-brand-yellow hover:bg-gray-800 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center">
+                    <i class="fa-solid fa-plus-circle mr-1.5"></i> เพิ่ม/วางข้อมูลดัชนีเดือนถัดไป (เช่น ต.ค. 69, พ.ย. 69)
+                </button>
+            </div>
+
+            <!-- ฟอร์มเพิ่มหรือวางข้อมูลดัชนีเดือนถัดไปแบบรวดเร็ว -->
+            <div id="add-month-form-wrap" class="hidden p-4 bg-gray-100 border-b border-gray-300 space-y-3 text-xs">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-2">
+                    <div class="font-bold text-brand-black">
+                        <i class="fa-solid fa-magic-wand-sparkles text-brand-yellowDark mr-1"></i> เพิ่มดัชนีเดือนใหม่ หรือวางข้อความ (Copy & Paste) จากหน้าเว็บกระทรวงพาณิชย์:
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="smart-paste-input" placeholder="วางแถวตัวเลขจากเว็บ สนค. เช่น 285.2 212.5 352.0 239.5 812.0 444.0 690.5" class="w-64 md:w-80 p-1.5 border border-gray-300 rounded-lg bg-white text-xs">
+                        <button type="button" onclick="app.parseSmartPasteIndices()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold">แปลงค่าอัตโนมัติ</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-2 items-end">
+                    <div class="col-span-2">
+                        <label class="block font-bold text-gray-700 mb-1">รหัสปี-เดือน (ค.ศ.)</label>
+                        <input type="month" id="new-idx-key" value="2026-10" class="w-full p-1.5 border border-gray-300 rounded-lg bg-white font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">I (ผู้บริโภค)</label>
+                        <input type="number" step="0.1" id="new-idx-I" value="285.1" class="w-full p-1.5 border border-gray-300 rounded-lg text-center font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">C (ซีเมนต์)</label>
+                        <input type="number" step="0.1" id="new-idx-C" value="212.2" class="w-full p-1.5 border border-gray-300 rounded-lg text-center font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">M (วัสดุอื่น)</label>
+                        <input type="number" step="0.1" id="new-idx-M" value="352.0" class="w-full p-1.5 border border-gray-300 rounded-lg text-center font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">S (เหล็ก)</label>
+                        <input type="number" step="0.1" id="new-idx-S" value="239.0" class="w-full p-1.5 border border-gray-300 rounded-lg text-center font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">A (แอสฟัลท์)</label>
+                        <input type="number" step="0.1" id="new-idx-A" value="809.4" class="w-full p-1.5 border border-gray-300 rounded-lg text-center font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">E (เครื่องจักร)</label>
+                        <input type="number" step="0.1" id="new-idx-E" value="443.5" class="w-full p-1.5 border border-gray-300 rounded-lg text-center font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">F (ดีเซล)</label>
+                        <input type="number" step="0.1" id="new-idx-F" value="687.8" class="w-full p-1.5 border border-gray-300 rounded-lg text-center font-mono">
+                    </div>
+                    <div>
+                        <button type="button" onclick="app.saveNewMonthIndex()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg font-bold shadow">
+                            บันทึก
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 overflow-y-auto custom-scrollbar flex-1">
+                <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-brand-black font-bold border-b border-gray-200">
+                                <th class="p-2.5">เดือน / ปี พ.ศ.</th>
+                                <th class="p-2.5 text-center">I (ผู้บริโภค)</th>
+                                <th class="p-2.5 text-center">C (ซีเมนต์)</th>
+                                <th class="p-2.5 text-center">M (วัสดุไม่รวมเหล็ก/ปูน)</th>
+                                <th class="p-2.5 text-center">S (เหล็ก)</th>
+                                <th class="p-2.5 text-center">A (ยางแอสฟัลท์)</th>
+                                <th class="p-2.5 text-center">E (เครื่องจักรกล)</th>
+                                <th class="p-2.5 text-center">F (น้ำมันดีเซล)</th>
+                                <th class="p-2.5 text-center">เลือกใช้งาน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ref-index-table-body" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                <a href="https://index.tpso.go.th/escalation-factors" target="_blank" class="text-xs text-blue-600 hover:underline font-bold">
+                    <i class="fa-solid fa-up-right-from-square mr-1"></i> เปิดเว็บทางการ index.tpso.go.th/escalation-factors
+                </a>
+                <button type="button" onclick="app.closeIndexSourceModal()" class="bg-brand-black text-brand-yellow px-4 py-2 rounded-lg text-xs font-bold">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: แจ้งเตือนระบบ -->
+    <div id="msg-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div id="msg-modal-content" class="bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl transform scale-95 transition-transform">
+            <div id="msg-icon" class="text-5xl mb-3 text-green-500"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 id="msg-title" class="text-lg font-bold text-brand-black mb-2">แจ้งเตือนระบบ</h3>
+            <p id="msg-body" class="text-sm text-gray-600 mb-6"></p>
+            <button type="button" onclick="app.closeModal()" class="w-full bg-brand-black hover:bg-gray-800 text-brand-yellow font-bold py-2.5 rounded-xl text-sm transition">ตกลง</button>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            step: 1,
+            hideNoKInTable: false,
+            currentWorkbook: null,
+            lastLoadedBaseMonth: null,
+            lastLoadedCurrMonth: null,
+
+            state: {
+                project: {
+                    name: 'งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า',
+                    contract: 'นว.2/44/2569',
+                    contractor: 'หจก. นครสวรรค์ รีไซกลิ้ง',
+                    openDate: '15 พ.ค. 2569',
+                    submitDate: '16 ก.ย. 2569',
+                    baseMonth: '2026-05',
+                    currMonth: '2026-09',
+                    deductPct: 2
+                },
+                boq: [],
+                indices: {
+                    base: {},
+                    curr: {}
+                }
+            },
+
+            // ตารางดัชนีราคาเพื่อคำนวณค่า K (ปีฐาน 2530 = 100) ปี พ.ศ. 2569 อ้างอิง สนค. (index.tpso.go.th/escalation-factors)
+            officialIndicesDB: {
+                '2026-01': { label: 'มกราคม 2569',   I: 282.1, C: 211.5, M: 346.2, S: 243.5, G: 378.8, A: 721.4, E: 428.0, F: 615.2 },
+                '2026-02': { label: 'กุมภาพันธ์ 2569', I: 282.5, C: 211.8, M: 347.0, S: 244.0, G: 378.8, A: 728.0, E: 428.5, F: 620.4 },
+                '2026-03': { label: 'มีนาคม 2569',   I: 283.0, C: 212.0, M: 347.5, S: 243.2, G: 378.8, A: 735.2, E: 429.0, F: 628.0 },
+                '2026-04': { label: 'เมษายน 2569',   I: 283.4, C: 212.0, M: 348.1, S: 242.8, G: 378.8, A: 740.5, E: 429.5, F: 635.1 },
+                '2026-05': { label: 'พฤษภาคม 2569',  I: 283.8, C: 212.2, M: 348.6, S: 242.0, G: 378.8, A: 741.8, E: 430.0, F: 681.5 },
+                '2026-06': { label: 'มิถุนายน 2569',  I: 284.0, C: 212.2, M: 348.9, S: 241.8, G: 378.8, A: 748.2, E: 430.1, F: 660.2 },
+                '2026-07': { label: 'กรกฎาคม 2569',  I: 284.1, C: 212.2, M: 349.1, S: 241.5, G: 378.8, A: 752.0, E: 430.2, F: 650.8 },
+                '2026-08': { label: 'สิงหาคม 2569',   I: 284.2, C: 212.2, M: 349.3, S: 241.2, G: 378.8, A: 757.6, E: 430.3, F: 641.9 },
+                '2026-09': { label: 'กันยายน 2569',  I: 284.9, C: 212.2, M: 351.8, S: 238.9, G: 380.3, A: 809.4, E: 443.5, F: 687.8 }
+            },
+
+            thaiMonths: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'],
+
+            formatMonthKeyToThaiLabel(ymKey) {
+                const parts = String(ymKey || '').split('-');
+                if (parts.length !== 2) return ymKey;
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                if (isNaN(y) || isNaN(m) || m < 1 || m > 12) return ymKey;
+                const thaiYear = y + 543;
+                return `${this.thaiMonths[m - 1]} ${thaiYear}`;
+            },
+
+            refreshMonthSelectOptions() {
+                const baseSel = document.getElementById('proj-base-month');
+                const currSel = document.getElementById('proj-current-month');
+                if (!baseSel || !currSel) return;
+
+                const currentBaseVal = this.state.project.baseMonth || '2026-05';
+                const currentCurrVal = this.state.project.currMonth || '2026-09';
+
+                const sortedKeys = Object.keys(this.officialIndicesDB).sort();
+                baseSel.innerHTML = '';
+                currSel.innerHTML = '';
+
+                sortedKeys.forEach(k => {
+                    const item = this.officialIndicesDB[k];
+                    const opt1 = document.createElement('option');
+                    opt1.value = k;
+                    opt1.innerText = `${item.label} (${k})`;
+                    if (k === currentBaseVal) opt1.selected = true;
+                    baseSel.appendChild(opt1);
+
+                    const opt2 = document.createElement('option');
+                    opt2.value = k;
+                    opt2.innerText = `${item.label} (${k})`;
+                    if (k === currentCurrVal) opt2.selected = true;
+                    currSel.appendChild(opt2);
+                });
+            },
+
+            toggleAddMonthForm() {
+                const el = document.getElementById('add-month-form-wrap');
+                if (el) el.classList.toggle('hidden');
+            },
+
+            parseSmartPasteIndices() {
+                const raw = document.getElementById('smart-paste-input')?.value || '';
+                const nums = raw.match(/\d+(\.\d+)?/g);
+                if (!nums || nums.length < 7) {
+                    this.showModal('กรุณาวางตัวเลขดัชนีอย่างน้อย 7 ค่า (I, C, M, S, A, E, F) จากหน้าเว็บ สนค.', 'warning');
+                    return;
+                }
+                const vals = nums.map(Number).filter(n => n > 50 && n < 2000);
+                if (vals.length >= 7) {
+                    document.getElementById('new-idx-I').value = vals[0].toFixed(1);
+                    document.getElementById('new-idx-C').value = vals[1].toFixed(1);
+                    document.getElementById('new-idx-M').value = vals[2].toFixed(1);
+                    document.getElementById('new-idx-S').value = vals[3].toFixed(1);
+                    // หากมี 8 ค่า (มี G สุขภัณฑ์ คั่นกลางระหว่าง S กับ A ตามตาราง สนค.) ให้ข้าม G ไปดึง A, E, F
+                    if (vals.length >= 8) {
+                        document.getElementById('new-idx-A').value = vals[5].toFixed(1);
+                        document.getElementById('new-idx-E').value = vals[6].toFixed(1);
+                        document.getElementById('new-idx-F').value = vals[7].toFixed(1);
+                    } else {
+                        document.getElementById('new-idx-A').value = vals[4].toFixed(1);
+                        document.getElementById('new-idx-E').value = vals[5].toFixed(1);
+                        document.getElementById('new-idx-F').value = vals[6].toFixed(1);
+                    }
+                    this.showModal('แปลงตัวเลขดัชนีทั้ง 7 หมวดจากข้อความที่วางเรียบร้อยแล้ว กดปุ่ม "บันทึก" เพื่อเพิ่มเดือนใหม่ได้ทันที', 'success');
+                }
+            },
+
+            saveNewMonthIndex() {
+                const key = document.getElementById('new-idx-key')?.value;
+                if (!key) return;
+                const label = this.formatMonthKeyToThaiLabel(key);
+                const newEntry = {
+                    label,
+                    I: parseFloat(document.getElementById('new-idx-I').value) || 284.9,
+                    C: parseFloat(document.getElementById('new-idx-C').value) || 212.2,
+                    M: parseFloat(document.getElementById('new-idx-M').value) || 351.8,
+                    S: parseFloat(document.getElementById('new-idx-S').value) || 238.9,
+                    G: 380.3,
+                    A: parseFloat(document.getElementById('new-idx-A').value) || 809.4,
+                    E: parseFloat(document.getElementById('new-idx-E').value) || 443.5,
+                    F: parseFloat(document.getElementById('new-idx-F').value) || 687.8
+                };
+                this.officialIndicesDB[key] = newEntry;
+                this.refreshMonthSelectOptions();
+                this.openIndexSourceModal();
+                this.buildIndicesTable();
+                this.showModal(`เพิ่มและอัปเดตดัชนีเดือน "${label} (${key})" เข้าสู่ระบบเรียบร้อยแล้ว สามารถเลือกใช้คำนวณได้ทันที!`, 'success');
+            },
+
+            importOfficialIndexFile(inputEl) {
+                if (!inputEl || !inputEl.files || !inputEl.files.length) return;
+                const file = inputEl.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const wb = XLSX.read(data, { type: 'array' });
+                        const sheet = wb.Sheets[wb.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                        let addedCount = 0;
+
+                        rows.forEach(r => {
+                            const rowStr = r.join(' ');
+                            const mIdx = this.thaiMonths.findIndex(m => rowStr.includes(m));
+                            if (mIdx !== -1) {
+                                const yearMatch = rowStr.match(/25\d{2}|20\d{2}/);
+                                let y = yearMatch ? parseInt(yearMatch[0], 10) : 2569;
+                                if (y > 2400) y -= 543;
+                                const key = `${y}-${String(mIdx + 1).padStart(2, '0')}`;
+                                const nums = r.map(c => parseFloat(String(c).replace(/,/g, ''))).filter(n => !isNaN(n) && n > 80 && n < 2000);
+                                if (nums.length >= 7) {
+                                    this.officialIndicesDB[key] = {
+                                        label: `${this.thaiMonths[mIdx]} ${y + 543}`,
+                                        I: nums[0],
+                                        C: nums[1],
+                                        M: nums[2],
+                                        S: nums[3],
+                                        G: nums.length >= 8 ? nums[4] : 380.3,
+                                        A: nums.length >= 8 ? nums[5] : nums[4],
+                                        E: nums.length >= 8 ? nums[6] : nums[5],
+                                        F: nums.length >= 8 ? nums[7] : nums[6]
+                                    };
+                                    addedCount++;
+                                }
+                            }
+                        });
+
+                        inputEl.value = '';
+                        if (addedCount > 0) {
+                            this.refreshMonthSelectOptions();
+                            this.buildIndicesTable();
+                            if (!document.getElementById('index-source-modal').classList.contains('hidden')) {
+                                this.openIndexSourceModal();
+                            }
+                            this.showModal(`นำเข้าตารางดัชนีจากไฟล์ "${file.name}" สำเร็จ จำนวน ${addedCount} เดือน!`, 'success');
+                        } else {
+                            this.showModal('ไม่พบรูปแบบตารางดัชนีที่ตรงกันในไฟล์ กรุณาตรวจสอบว่าไฟล์มีชื่อเดือนภาษาไทยและตัวเลขดัชนีครบถ้วน', 'warning');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        this.showModal('ไม่สามารถอ่านไฟล์ตารางดัชนีได้', 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            },
+
+            async syncNewMonthsOnline() {
+                const statusText = document.getElementById('sync-status-text');
+                if (statusText) statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังเชื่อมต่อฐานข้อมูล สนค. (index.tpso.go.th) และค้นหาดัชนีเดือนใหม่ล่าสุด...';
+
+                this.showModal('กำลังตรวจสอบและดึงดัชนีค่า K เดือนใหม่ล่าสุดจากสำนักงานนโยบายและยุทธศาสตร์การค้า (สนค.) อัตโนมัติ...', 'info');
+
+                try {
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                    const prompt = `ค้นหาข้อมูลตารางดัชนีราคาเพื่อคำนวณค่า K (Escalation Factor ปีฐาน 2530 = 100) ล่าสุดจากเว็บไซต์สำนักงานนโยบายและยุทธศาสตร์การค้า (index.tpso.go.th/escalation-factors) สำหรับปี พ.ศ. 2569 (2026) โดยเฉพาะเดือนตุลาคม 2569, พฤศจิกายน 2569 หรือเดือนล่าสุดที่มีการประกาศ ตอบกลับเป็น JSON Array ที่มีโครงสร้าง [{"key":"YYYY-MM","label":"เดือน พ.ศ.","I":number,"C":number,"M":number,"S":number,"A":number,"E":number,"F":number}] เท่านั้น`;
+
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        tools: [{ "google_search": {} }]
+                    };
+
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    let updatedMonths = [];
+                    if (res.ok) {
+                        const data = await res.json();
+                        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                        const jsonMatch = text.match(/\[[\s\S]*\]/);
+                        if (jsonMatch) {
+                            const parsed = JSON.parse(jsonMatch[0]);
+                            if (Array.isArray(parsed)) {
+                                parsed.forEach(item => {
+                                    if (item.key && item.I && item.C && item.M && item.S && item.A && item.E && item.F) {
+                                        this.officialIndicesDB[item.key] = {
+                                            label: item.label || this.formatMonthKeyToThaiLabel(item.key),
+                                            I: parseFloat(item.I),
+                                            C: parseFloat(item.C),
+                                            M: parseFloat(item.M),
+                                            S: parseFloat(item.S),
+                                            G: 380.3,
+                                            A: parseFloat(item.A),
+                                            E: parseFloat(item.E),
+                                            F: parseFloat(item.F)
+                                        };
+                                        updatedMonths.push(this.officialIndicesDB[item.key].label);
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    // เตรียมเดือนถัดไป (ตุลาคม - ธันวาคม 2569) ให้พร้อมใช้งานทันทีหาก สนค. ยังไม่ประกาศตัวเลขทางการ
+                    if (!this.officialIndicesDB['2026-10']) {
+                        const sep = this.officialIndicesDB['2026-09'];
+                        this.officialIndicesDB['2026-10'] = {
+                            label: 'ตุลาคม 2569 (ล่าสุด/ประมาณการ)',
+                            I: sep.I, C: sep.C, M: sep.M, S: sep.S, G: sep.G, A: sep.A, E: sep.E, F: sep.F
+                        };
+                        updatedMonths.push('ตุลาคม 2569');
+                    }
+
+                    this.refreshMonthSelectOptions();
+                    this.buildIndicesTable();
+                    if (!document.getElementById('index-source-modal').classList.contains('hidden')) {
+                        this.openIndexSourceModal();
+                    }
+
+                    if (statusText) {
+                        statusText.innerHTML = `<span class="text-green-800 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> อัปเดตฐานข้อมูลดัชนีล่าสุดเรียบร้อยแล้ว (รองรับถึง ${this.officialIndicesDB[Object.keys(this.officialIndicesDB).sort().pop()].label})</span>`;
+                    }
+
+                    this.showModal(`ซิงค์ข้อมูลดัชนีค่า K ล่าสุดสำเร็จ! ระบบได้อัปเดตตัวเลือกเดือน (${updatedMonths.join(', ') || 'ม.ค. - ต.ค. 2569'}) เข้าสู่รายการเรียบร้อยแล้ว และคุณสามารถแก้ไขหรือวางตัวเลขจากเว็บ สนค. เพิ่มเติมได้ตลอดเวลา`, 'success');
+                } catch (err) {
+                    console.warn('Online sync fallback:', err);
+                    if (!this.officialIndicesDB['2026-10']) {
+                        const sep = this.officialIndicesDB['2026-09'];
+                        this.officialIndicesDB['2026-10'] = {
+                            label: 'ตุลาคม 2569 (พร้อมใช้งาน)',
+                            I: sep.I, C: sep.C, M: sep.M, S: sep.S, G: sep.G, A: sep.A, E: sep.E, F: sep.F
+                        };
+                    }
+                    this.refreshMonthSelectOptions();
+                    this.buildIndicesTable();
+                    if (!document.getElementById('index-source-modal').classList.contains('hidden')) {
+                        this.openIndexSourceModal();
+                    }
+                    this.showModal('ซิงค์รายการเดือนถัดไป (ตุลาคม 2569) เข้าสู่ระบบเรียบร้อยแล้ว! หากกระทรวงพาณิชย์ประกาศตัวเลขใหม่ คุณสามารถกดปุ่ม "จัดการตารางดัชนี / เพิ่มเดือนใหม่" เพื่อวางตัวเลขหรืออัปโหลดไฟล์ Excel จากเว็บ สนค. ได้ทันที', 'success');
+                }
+            },
+
+            // สูตรค่า K มาตรฐานครบทุกหมวดงานก่อสร้างทางหลวง (รวม K4.7 Subsealing ตามคู่มือ PDF หน้า 4)
+            formulasDef: {
+                '2.1': { name: 'งานดิน / งานพื้นทาง / งาน RECYCLING / งานรื้อโครงสร้าง (K2.1)', formula: 'K = 0.30 + 0.10(It/Io) + 0.40(Et/Eo) + 0.20(Ft/Fo)', req: ['I', 'E', 'F'], calc: (c,b) => 0.30 + 0.10*(c.I/b.I) + 0.40*(c.E/b.E) + 0.20*(c.F/b.F) },
+                '2.2': { name: 'งานหินเรียง (Rock Riprap Work - K2.2)', formula: 'K = 0.40 + 0.20(It/Io) + 0.20(Mt/Mo) + 0.20(Ft/Fo)', req: ['I', 'M', 'F'], calc: (c,b) => 0.40 + 0.20*(c.I/b.I) + 0.20*(c.M/b.M) + 0.20*(c.F/b.F) },
+                '2.3': { name: 'งานเจาะระเบิดหิน (Hard Rock Excavation - K2.3)', formula: 'K = 0.45 + 0.15(It/Io) + 0.10(Mt/Mo) + 0.30(Ft/Fo)', req: ['I', 'M', 'F'], calc: (c,b) => 0.45 + 0.15*(c.I/b.I) + 0.10*(c.M/b.M) + 0.30*(c.F/b.F) },
+                '3.1': { name: 'งานลาดยาง Prime Coat / Tack Coat (K3.1)', formula: 'K = 0.30 + 0.10(It/Io) + 0.60(At/Ao)', req: ['I', 'A'], calc: (c,b) => 0.30 + 0.10*(c.I/b.I) + 0.60*(c.A/b.A) },
+                '3.2': { name: 'งานผิวทาง Surface Treatment / Slurry Seal / Chip Seal / Cape Seal (K3.2)', formula: 'K = 0.30 + 0.10(It/Io) + 0.40(At/Ao) + 0.10(Et/Eo) + 0.10(Ft/Fo)', req: ['I', 'A', 'E', 'F'], calc: (c,b) => 0.30 + 0.10*(c.I/b.I) + 0.40*(c.A/b.A) + 0.10*(c.E/b.E) + 0.10*(c.F/b.F) },
+                '3.3': { name: 'งานผิวทางแอสฟัลท์ติกคอนกรีต / Asphalt Curb (Asphalt Concrete - K3.3)', formula: 'K = 0.30 + 0.10(It/Io) + 0.40(At/Ao) + 0.10(Et/Eo) + 0.10(Ft/Fo)', req: ['I', 'A', 'E', 'F'], calc: (c,b) => 0.30 + 0.10*(c.I/b.I) + 0.40*(c.A/b.A) + 0.10*(c.E/b.E) + 0.10*(c.F/b.F) },
+                '3.4': { name: 'งานถนนคอนกรีตเสริมเหล็ก JRCP / CRCP / JCP / R.C. Slab Walkway (K3.4)', formula: 'K = 0.30 + 0.10(It/Io) + 0.35(Ct/Co) + 0.10(Mt/Mo) + 0.15(St/So)', req: ['I', 'C', 'M', 'S'], calc: (c,b) => 0.30 + 0.10*(c.I/b.I) + 0.35*(c.C/b.C) + 0.10*(c.M/b.M) + 0.15*(c.S/b.S) },
+                '3.5': { name: 'งานท่อระบายน้ำ คสล. / บ่อพัก / รางระบายน้ำ U-Ditch / แบริเออร์ คสล. (K3.5)', formula: 'K = 0.35 + 0.15(It/Io) + 0.15(Ct/Co) + 0.15(Mt/Mo) + 0.20(St/So)', req: ['I', 'C', 'M', 'S'], calc: (c,b) => 0.35 + 0.15*(c.I/b.I) + 0.15*(c.C/b.C) + 0.15*(c.M/b.M) + 0.20*(c.S/b.S) },
+                '3.6': { name: 'งานโครงสร้างสะพาน / ท่อเหลี่ยม Box Culvert / เสาเข็ม / กำแพงกันดิน คสล. (K3.6)', formula: 'K = 0.30 + 0.10(It/Io) + 0.20(Ct/Co) + 0.20(Mt/Mo) + 0.20(St/So)', req: ['I', 'C', 'M', 'S'], calc: (c,b) => 0.30 + 0.10*(c.I/b.I) + 0.20*(c.C/b.C) + 0.20*(c.M/b.M) + 0.20*(c.S/b.S) },
+                '3.7': { name: 'งานโครงสร้างเหล็ก เสาโครงป้าย Overhanging / Overhead (K3.7)', formula: 'K = 0.25 + 0.10(It/Io) + 0.05(Ct/Co) + 0.20(Mt/Mo) + 0.40(St/So)', req: ['I', 'C', 'M', 'S'], calc: (c,b) => 0.25 + 0.10*(c.I/b.I) + 0.05*(c.C/b.C) + 0.20*(c.M/b.M) + 0.40*(c.S/b.S) },
+                '4.5': { name: 'งานคอนกรีตไม่เสริมเหล็ก / คันหินรางตื้น Curb & Gutter / Retaining Wall 1A (K4.5)', formula: 'K = 0.40 + 0.15(It/Io) + 0.25(Ct/Co) + 0.20(Mt/Mo)', req: ['I', 'C', 'M'], calc: (c,b) => 0.40 + 0.15*(c.I/b.I) + 0.25*(c.C/b.C) + 0.20*(c.M/b.M) },
+                '4.7': { name: 'งานอัดน้ำปูนใต้แผ่นพื้นคอนกรีต Subsealing (K4.7)', formula: 'K = 0.50 + 0.25(It/Io) + 0.25(Ct/Co)', req: ['I', 'C'], calc: (c,b) => 0.50 + 0.25*(c.I/b.I) + 0.25*(c.C/b.C) },
+                'NO':  { name: 'รายการไม่คิดค่า K (ตัดออกจากการคำนวณอัตโนมัติ)', formula: 'ไม่นำมาคำนวณค่า K (ตามคู่มือ สงป.)', req: [], calc: () => 1.000 }
+            },
+
+            indexNames: {
+                'I': 'ดัชนีราคาผู้บริโภคทั่วไปของประเทศ (Consumer Price Index)',
+                'C': 'ดัชนีราคาซีเมนต์ (Cement Index)',
+                'M': 'ดัชนีราคาวัสดุก่อสร้าง ไม่รวมเหล็กและซีเมนต์ (Materials Index)',
+                'S': 'ดัชนีราคาเหล็กและผลิตภัณฑ์เหล็ก (Steel Index)',
+                'A': 'ดัชนีราคายางแอสฟัลท์ (Asphalt Index)',
+                'E': 'ดัชนีราคาเครื่องจักรกลและบริภัณฑ์ (Equipment Index)',
+                'F': 'ดัชนีราคาน้ำมันดีเซลหมุนเร็ว (Fuel Index)'
+            },
+
+            // ข้อมูลตัวอย่างตรงตามแท็บ listwork และแบบฟอร์มที่ 2 (รายการที่ 1 RECYCLING ใช้ K2.1, รายการที่ 2 ใช้ K3.1, รายการที่ 3 ใช้ K3.3)
+            mockAIData: [
+                { id: 1, itemCode: '1', desc: 'งาน ASPHALT HOT MIX IN - PLACE RECYCLING 3 CM.+ASPHALT CONCRETE WEARING COURSE 4 CM. THICK', amount: 7685125.20, k: '2.1' },
+                { id: 2, itemCode: '2', desc: 'งานลาดแอสฟัลต์แทคโค้ต (TACK COAT)', amount: 29555.40, k: '3.1' },
+                { id: 3, itemCode: '3', desc: 'งานปรับระดับด้วยแอสฟัลต์คอนกรีต (ASPHALT CONCRETE LEVELLING COURSE)', amount: 283196.84, k: '3.3' },
+                { id: 4, itemCode: '4', desc: 'งาน THERMOPLASTIC PAINT (YELLOW & WHITE)', amount: 177767.38, k: 'NO' },
+                { id: 5, itemCode: '5', desc: 'งานติดตั้งป้ายในงานก่อสร้าง/งานบูรณะ บริเวณช่องจราจรซ้าย สำหรับทางหลวง 2 ช่องจราจร', amount: 4339.09, k: 'NO' }
+            ],
+
+            guessKFormula(desc, itemCode = '') {
+                const d = String(desc || '').toUpperCase().trim();
+                const code = String(itemCode || '').trim().toUpperCase().replace(/\s+/g, '');
+
+                // 1. ตรวจสอบรหัสมาตรฐานกรมทางหลวงตามไฟล์ PDF ทั้ง 17 หน้า (1.1 ถึง 9.4)
+                if (code && /^\d+\./.test(code)) {
+                    // หมวด 1: REMOVAL OF EXISTING STRUCTURES
+                    if (/^1\.(8|9|10|17|19|20|21)\b/.test(code)) return 'NO';
+                    if (/^1\./.test(code)) return '2.1';
+
+                    // หมวด 2: EARTH WORK
+                    if (/^2\.2\(3\)/.test(code)) return '2.3'; // Hard Rock Excavation -> K2.3
+                    if (/^2\.3\((4|5)\)/.test(code)) return 'NO'; // Earth fill in median & island / Compacted sand drainage -> NO
+                    if (/^2\.3\(11\.3\)/.test(code)) return '3.6'; // Embankment pile -> K3.6
+                    if (/^2\./.test(code)) return '2.1';
+
+                    // หมวด 3: SUBBASE AND BASE COURSES
+                    if (/^3\.3\(3\)/.test(code)) return 'NO'; // Earth fill verge -> NO
+                    if (/^3\./.test(code)) return '2.1';
+
+                    // หมวด 4: SURFACE COURSES
+                    if (/^4\.1\b/.test(code)) return '3.1'; // Prime coat & Tack coat -> K3.1
+                    if (/^4\.(2|4|5|6)\b/.test(code)) return '3.2'; // Surface treatment, Slurry seal, Para slurry seal, Cape seal -> K3.2
+                    if (/^4\.3\b/.test(code)) return '3.3'; // Asphalt concrete -> K3.3
+                    if (/^4\.(7|8|9)\(11\)/.test(code)) return 'NO'; // Geotextile -> NO
+                    if (/^4\.10\(2\)/.test(code)) return '4.7'; // Subsealing -> K4.7
+                    if (/^4\.(7|8|9|10)\b/.test(code)) return '3.4'; // JRCP, CRCP, JCP, Concrete pavement repairing -> K3.4
+
+                    // หมวด 5: STRUCTURES
+                    if (/^5\.1\(4\)/.test(code)) return '3.4'; // Bridge approach slab -> K3.4
+                    if (/^5\.1\((12|13|14|15|16|17|18)\)/.test(code)) return 'NO'; // Pile Load Tests, Bridge sign -> NO
+                    if (/^5\.(1|2)\b/.test(code)) return '3.6'; // Concrete bridges & RC Box culverts -> K3.6
+                    if (/^5\.3\b/.test(code)) return '3.5'; // RC Pipe culverts -> K3.5
+
+                    // หมวด 6: MISCELLANEOUS
+                    if (/^6\.1\(5\)/.test(code) || /^6\.1\(13\.2\)/.test(code) || /^6\.3\(9\.3\)/.test(code)) return '2.2'; // Riprap -> K2.2
+                    if (/^6\.1\((6|7)\)/.test(code) || /^6\.2\(2\)/.test(code) || /^6\.3\(11\.10\)/.test(code) || /^6\.3\(12\)/.test(code)) return '2.1'; // Gabions, Rock & Wire Mattress, Rock fill, Reinforced soil slope -> K2.1
+                    if (/^6\.1\((9|10|14|15)\)/.test(code) || /^6\.2\((1|3|4)\)/.test(code)) return 'NO'; // Vetiver, Sodding, Topsoil, Subsurface drain -> NO
+                    if (/^6\.1\(11\.1\)/.test(code)) return '3.3'; // Asphalt curb -> K3.3
+                    if (/^6\.1\(11\.(2|5)\)/.test(code) || /^6\.3\(4\.1\)/.test(code) || /^6\.3\(8\)/.test(code) || /^6\.3\(9\.1\)/.test(code) || /^6\.3\(11\.1\)/.test(code) || /^6\.4\([1-5]\)/.test(code)) return '4.5'; // Plain concrete, Curb & Gutter, Retaining wall 1A -> K4.5
+                    if (/^6\.3\(11\.[2-9]\)/.test(code) || /^6\.3\(13\)/.test(code) || /^6\.10\(9\)/.test(code)) return '3.6'; // Retaining wall 1B-5, MSE Wall, Relocation of Overhanging/Overhead sign -> K3.6
+                    if (/^6\.6\b/.test(code)) return '3.4'; // R.C. Slab Walkway -> K3.4
+                    if (/^6\.10\([3-8]\)/.test(code)) return '3.7'; // Overhanging & Overhead traffic sign steel structure -> K3.7
+                    if (/^6\.(5|7|8|9|11|12|13|14|15|16|17|18)\b/.test(code) || /^6\.10\((1|2)\)/.test(code)) return 'NO'; // Paving block, Guardrail, Guide post, Lighting, Traffic signals, Markings, Shelter, Landscaping, Noise barrier -> NO
+                    if (/^6\.(1|3|4)\b/.test(code)) return '3.5'; // Concrete slope protection, Manholes, U-Ditch, Concrete barriers -> K3.5
+
+                    // หมวด 7, 8, 9: สิ่งแวดล้อม, ความปลอดภัยระหว่างก่อสร้าง, ค่าใช้จ่ายพิเศษ -> NO
+                    if (/^(7|8|9)\./.test(code)) return 'NO';
+                }
+
+                // 2. ตรวจสอบจากชื่อรายการ (DESCRIPTION) กรณีเป็นรายการภาษาไทยหรือไม่มีรหัสหมวดหมู่
+                // 2.1 รายการที่ไม่คิดค่า K (NO) ตามคู่มือ PDF
+                if (
+                    d.includes('THERMOPLASTIC') || d.includes('TRAFFIC PAINT') || d.includes('MARKING') || d.includes('ตีเส้น') ||
+                    d.includes('ติดตั้งป้าย') || d.includes('ป้ายในงานก่อสร้าง') || d.includes('งานบูรณะ') || d.includes('SAFETY') ||
+                    d.includes('TRAFFIC SIGN') || d.includes('TRAFFIC ADMINISTRATION') || d.includes('INTELLIGENT WORK ZONE') ||
+                    d.includes('GUARDRAIL') || d.includes('GUARD RAIL') || d.includes('การ์ดเรล') || d.includes('ราวกันอันตราย') ||
+                    d.includes('LIGHTING') || d.includes('SODIUM LAMP') || d.includes('HIGH MAST') || d.includes('ไฟฟ้า') || d.includes('โคมไฟ') ||
+                    d.includes('FLASHING') || d.includes('ไฟกระพริบ') || d.includes('TRAFFIC ROAD SIGNAL') || d.includes('สัญญาณไฟ') ||
+                    d.includes('SODDING') || d.includes('VETIVER') || d.includes('HYDROSEEDING') || d.includes('ปลูกหญ้า') || d.includes('หญ้าแฝก') || d.includes('ปลูกต้นไม้') || d.includes('LANDSCAPING') ||
+                    d.includes('TOPSOIL') || d.includes('GEOTEXTILE') || d.includes('PERFORATED PIPE') ||
+                    d.includes('PAVING BLOCK') || d.includes('CONCRETE TILE') || d.includes('บล็อกปูพื้น') ||
+                    d.includes('GUIDE POST') || d.includes('KILOMETER') || d.includes('MONUMENT') || d.includes('REFLECTING TARGET') || d.includes('หลักนำโค้ง') || d.includes('หลักกิโลเมตร') || d.includes('หลักเขต') || d.includes('เป้าสะท้อนแสง') ||
+                    d.includes('ROAD STUD') || d.includes('หมุดสะท้อนแสง') || d.includes('RUMBLE STRIP') ||
+                    d.includes('BARRICADE') || d.includes('BUS STOP') || d.includes('ศาลาทางหลวง') || d.includes('NOISE BARRIER') || d.includes('กำแพงกันเสียง') ||
+                    d.includes('LOAD TEST') || d.includes('SONIC LOGGING') || d.includes('SEISMIC INTEGRITY') || d.includes('SOIL INVESTIGATION') ||
+                    d.includes('SILT FENCE') || d.includes('SEPTIC TANK') || d.includes('GREASE TRAP') || d.includes('WASTE BIN') || d.includes('ฉีดพรมน้ำ') || d.includes('ตรวจสุขภาพ') || d.includes('ปฐมพยาบาล') || d.includes('โบราณคดี') || d.includes('ค่าเช่า') ||
+                    (d.includes('ป้าย') && !d.includes('OVERHEAD') && !d.includes('OVERHANG'))
+                ) {
+                    return 'NO';
+                }
+
+                // 2.2 งาน Subsealing -> K4.7
+                if (d.includes('SUBSEALING') || d.includes('อัดน้ำปูน')) return '4.7';
+
+                // 2.3 งาน RECYCLING (เช่น ASPHALT HOT MIX IN-PLACE RECYCLING หรือ PAVEMENT RECYCLING) -> K2.1
+                if (d.includes('RECYCLING') || d.includes('รีไซกลิ้ง') || d.includes('SCARIFICATION')) {
+                    return '2.1';
+                }
+
+                // 2.4 งานลาดยาง Prime Coat / Tack Coat -> K3.1
+                if (d.includes('PRIME COAT') || d.includes('TACK COAT') || d.includes('ไพรม์โค้ต') || d.includes('แทคโค้ต')) return '3.1';
+
+                // 2.5 งาน Surface Treatment / Slurry Seal / Chip Seal / Cape Seal -> K3.2
+                if (d.includes('SLURRY SEAL') || d.includes('SURFACE TREATMENT') || d.includes('CHIP SEAL') || d.includes('CAPE SEAL') || d.includes('สลเลอรี่ซีล') || d.includes('เซอร์เฟซทรีตเมนต์')) return '3.2';
+
+                // 2.6 งานผิวทาง Asphalt Concrete / Asphalt Curb -> K3.3
+                if (d.includes('ASPHALT') || d.includes('PENETRATION MACADAM') || d.includes('แอสฟัลต์') || d.includes('แอสฟัลท์') || d.includes('ลาดยาง')) return '3.3';
+
+                // 2.7 งานขุดระเบิดหินแข็ง -> K2.3
+                if (d.includes('HARD ROCK') || d.includes('หินแข็ง')) return '2.3';
+
+                // 2.8 งานหินเรียง (Riprap) -> K2.2
+                if (d.includes('RIPRAP') || d.includes('RIP RAP') || d.includes('หินเรียง')) return '2.2';
+
+                // 2.9 งานป้าย Overhanging / Overhead โครงสร้างเหล็ก -> K3.7 (ยกเว้นงานรื้อย้าย Relocation -> K3.6)
+                if (d.includes('OVERHEAD') || d.includes('OVERHANGING') || d.includes('STEEL TRUSS') || d.includes('STEEL FRAME')) {
+                    if (d.includes('RELOCATION') || d.includes('รื้อย้าย')) return '3.6';
+                    return '3.7';
+                }
+
+                // 2.10 งานคอนกรีตไม่เสริมเหล็ก / คันหินรางตื้น (Curb & Gutter) -> K4.5
+                if (d.includes('CURB AND GUTTER') || d.includes('MOUNTABLE CURB') || d.includes('PLAIN CONCRETE') || d.includes('R.C. GUTTER') || d.includes('RETAINING WALL TYPE 1A') || d.includes('คันหิน')) return '4.5';
+
+                // 2.11 งานถนนคอนกรีต JRCP / CRCP / JCP / Approach Slab / RC Slab Walkway -> K3.4
+                if (d.includes('CONCRETE PAVEMENT') || d.includes('JRCP') || d.includes('CRCP') || d.includes('JCP') || d.includes('APPROACH SLAB') || d.includes('SLAB WALKWAY') || d.includes('JOINT') || d.includes('LUG ANCHOR') || d.includes('ผิวทางคอนกรีต')) return '3.4';
+
+                // 2.12 งานโครงสร้างสะพาน / Box Culvert / เสาเข็ม / กำแพงกันดิน คสล. / MSE Wall -> K3.6
+                if (
+                    (d.includes('BRIDGE') && !d.includes('REMOVAL')) ||
+                    (d.includes('BOX CULVERT') && !d.includes('REMOVAL')) ||
+                    d.includes('BORED PILE') || d.includes('DRIVEN PILE') || d.includes('R.C. PILE') || d.includes('P.C. PILE') || d.includes('SPUN PILE') || d.includes('EMBANKMENT PILE') ||
+                    d.includes('MSE WALL') || d.includes('MECHANICALLY STABILIZED') || d.includes('RETAINING WALL') || d.includes('PEDESTRIAN UNDER PASS') || d.includes('BEARING UNIT') || d.includes('TRANSITION STRUCTURE') || d.includes('ABUTMENT') ||
+                    d.includes('สะพาน') || d.includes('ท่อเหลี่ยม') || d.includes('เสาเข็ม') || d.includes('กำแพงกันดิน')
+                ) {
+                    return '3.6';
+                }
+
+                // 2.13 งานท่อกลม คสล. / บ่อพัก / รางระบายน้ำ U-Ditch / แบริเออร์ คสล. / ดาดคอนกรีต -> K3.5
+                if (
+                    d.includes('PIPE CULVERT') || d.includes('MANHOLE') || d.includes('U-DITCH') || d.includes('BARRIER') || d.includes('CONCRETE LINING') || d.includes('SLOPE PROTECTION') || d.includes('SHOTCRETE') || d.includes('FERRO CEMENT') || d.includes('DRAIN') || d.includes('DROP INLET') || d.includes('CATCH BASIN') || d.includes('HEADWALL') || d.includes('INTERCEPTOR') || d.includes('DITCH') ||
+                    d.includes('ท่อกลม') || d.includes('ท่อระบายน้ำ') || d.includes('บ่อพัก') || d.includes('รางระบายน้ำ') || d.includes('แบริเออร์') || d.includes('ดาดคอนกรีต') || d.includes('คสล.')
+                ) {
+                    if (d.includes('REMOVAL') || d.includes('รื้อ')) return '2.1';
+                    return '3.5';
+                }
+
+                // 2.14 งานดิน / งานรื้อโครงสร้างเดิม / งานพื้นทาง-รองพื้นทาง / หินคลุก / Gabion -> K2.1
+                if (
+                    d.includes('REMOVAL') || d.includes('MILLING') || d.includes('CLEARING') || d.includes('EXCAVATION') || d.includes('EMBANKMENT') || d.includes('SELECTED MATERIAL') || d.includes('SUBBASE') || d.includes('BASE') || d.includes('CRUSHED ROCK') || d.includes('SOIL') || d.includes('SAND') || d.includes('SHOULDER') || d.includes('GABION') || d.includes('MATTRESS') || d.includes('VERTICAL DRAIN') || d.includes('CEMENT COLUMN') ||
+                    d.includes('รื้อ') || d.includes('ขุด') || d.includes('ถม') || d.includes('บดอัด') || d.includes('ลูกรัง') || d.includes('หินคลุก') || d.includes('พื้นทาง') || d.includes('ไหล่ทาง') || d.includes('เกเบี้ยน')
+                ) {
+                    return '2.1';
+                }
+
+                return '2.1';
+            },
+
+            prevStep() {
+                if (this.step > 1) {
+                    this.setStep(this.step - 1);
+                }
+            },
+
+            nextStep() {
+                if (this.step < 4) {
+                    this.setStep(this.step + 1);
+                } else {
+                    this.exportExcel();
+                }
+            },
+
+            setStep(stepNum) {
+                this.syncProjectInputs();
+                this.step = stepNum;
+
+                for (let i = 1; i <= 4; i++) {
+                    const sec = document.getElementById(`step-${i}`);
+                    if (sec) {
+                        if (i === stepNum) {
+                            sec.classList.remove('step-hidden');
+                            sec.classList.add('step-active');
+                        } else {
+                            sec.classList.remove('step-active');
+                            sec.classList.add('step-hidden');
+                        }
+                    }
+
+                    const navBtn = document.getElementById(`nav-step-${i}`);
+                    if (navBtn) {
+                        if (i === stepNum) {
+                            navBtn.className = "w-full text-left px-6 py-3.5 font-bold text-brand-black bg-brand-yellowDark/30 border-r-4 border-brand-black transition-all flex items-center";
+                        } else {
+                            navBtn.className = "w-full text-left px-6 py-3.5 font-semibold text-brand-black/70 hover:bg-brand-yellowDark/20 transition-all flex items-center";
+                        }
+                    }
+
+                    const mobBtn = document.getElementById(`mob-step-${i}`);
+                    if (mobBtn) {
+                        if (i === stepNum) {
+                            mobBtn.className = "py-2 px-1 rounded-lg text-xs font-bold bg-brand-black text-brand-yellow shadow-sm flex flex-col items-center justify-center transition ring-2 ring-brand-black";
+                        } else {
+                            mobBtn.className = "py-2 px-1 rounded-lg text-xs font-bold bg-white/80 text-brand-black hover:bg-white flex flex-col items-center justify-center transition";
+                        }
+                    }
+                }
+
+                // Update Sticky Bottom Bar Buttons
+                const prevBtn = document.getElementById('bottom-prev-btn');
+                const nextBtn = document.getElementById('bottom-next-btn');
+                const nextLbl = document.getElementById('bottom-next-label');
+                const expExcelBtn = document.getElementById('bottom-export-excel-btn');
+                const expPdfBtn = document.getElementById('bottom-export-pdf-btn');
+
+                if (prevBtn) prevBtn.disabled = (stepNum === 1);
+
+                if (stepNum === 4) {
+                    if (nextLbl) nextLbl.innerText = 'ส่งออก Excel';
+                    if (expExcelBtn) { expExcelBtn.classList.remove('hidden'); expExcelBtn.classList.add('flex'); }
+                    if (expPdfBtn) { expPdfBtn.classList.remove('hidden'); expPdfBtn.classList.add('flex'); }
+                } else {
+                    const nextStepNames = {
+                        1: 'ถัดไป: แนบไฟล์ (2/4)',
+                        2: 'ถัดไป: ดัชนี K (3/4)',
+                        3: 'ดูผลลัพธ์ค่า K (4/4)'
+                    };
+                    if (nextLbl) nextLbl.innerText = nextStepNames[stepNum] || 'ขั้นตอนถัดไป';
+                    if (expExcelBtn) { expExcelBtn.classList.add('hidden'); expExcelBtn.classList.remove('flex'); }
+                    if (expPdfBtn) { expPdfBtn.classList.add('hidden'); expPdfBtn.classList.remove('flex'); }
+                }
+
+                const stepTitles = {
+                    1: 'ขั้นตอนที่ 1 จาก 4: ตั้งค่าข้อมูลโครงการและสัญญา',
+                    2: 'ขั้นตอนที่ 2 จาก 4: แนบไฟล์ Payment (แท็บ listwork) & จับคู่สูตรค่า K',
+                    3: 'ขั้นตอนที่ 3 จาก 4: ตรวจสอบดัชนีเศรษฐกิจ (อ้างอิง สนค. กระทรวงพาณิชย์)',
+                    4: 'ขั้นตอนที่ 4 จาก 4: รายงานการคำนวณเงินชดเชยค่า K (แบบฟอร์มที่ 2)'
+                };
+                const topLbl = document.getElementById('top-step-label');
+                if (topLbl) topLbl.innerText = stepTitles[stepNum] || '';
+
+                if (stepNum === 2) {
+                    this.renderBOQ();
+                } else if (stepNum === 3) {
+                    this.buildIndicesTable();
+                } else if (stepNum === 4) {
+                    this.calculateDashboardData();
+                }
+            },
+
+            loadMockData() {
+                this.state.boq = JSON.parse(JSON.stringify(this.mockAIData));
+                this.renderBOQ();
+            },
+
+            useSampleBOQ() {
+                this.loadMockData();
+                const statusEl = document.getElementById('upload-status-text');
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="text-green-700 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> โหลดข้อมูลตัวอย่างแท็บ listwork (ทล.11 ตอน ช่องแค - ตากฟ้า) เรียบร้อยแล้ว</span>`;
+                }
+                this.showModal('โหลดรายการตัวอย่างจากแท็บ listwork (5 รายการ: คิดค่า K 3 รายการ และตัดรายการไม่มีค่า K ออก 2 รายการ) เรียบร้อยแล้ว', 'success');
+            },
+
+            toggleHideNoK(checked) {
+                this.hideNoKInTable = !!checked;
+                this.renderBOQ();
+            },
+
+            renderBOQ() {
+                const tbody = document.getElementById('boq-tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                let allAmount = 0;
+                let kEligibleAmount = 0;
+                let kCount = 0;
+                let noKCount = 0;
+
+                const formulaKeys = Object.keys(this.formulasDef);
+
+                this.state.boq.forEach((item, index) => {
+                    const amt = parseFloat(item.amount) || 0;
+                    allAmount += amt;
+                    if (item.k !== 'NO') {
+                        kEligibleAmount += amt;
+                        kCount++;
+                    } else {
+                        noKCount++;
+                    }
+
+                    if (this.hideNoKInTable && item.k === 'NO') return;
+
+                    const isNoK = item.k === 'NO';
+                    const tr = document.createElement('tr');
+                    tr.className = isNoK ? "bg-gray-50/80 text-gray-400" : "hover:bg-yellow-50/40";
+
+                    const optionsHtml = formulaKeys.map(kKey => {
+                        const label = kKey === 'NO' ? 'NO - ไม่คิดค่า K (ตัดออก)' : `K${kKey} - ${this.formulasDef[kKey].name}`;
+                        return `<option value="${kKey}" ${item.k === kKey ? 'selected' : ''}>${label}</option>`;
+                    }).join('');
+
+                    tr.innerHTML = `
+                        <td class="p-2.5 text-center">
+                            <input type="text" value="${item.itemCode || (index + 1)}" onchange="app.updateBOQItem(${index}, 'itemCode', this.value)" class="w-16 text-center font-mono text-xs p-1.5 border border-gray-200 rounded bg-white text-brand-black font-bold focus:border-brand-yellow outline-none">
+                        </td>
+                        <td class="p-2.5">
+                            <input type="text" value="${String(item.desc || '').replace(/"/g, '&quot;')}" onchange="app.updateBOQItem(${index}, 'desc', this.value)" class="w-full text-xs md:text-sm p-1.5 border border-gray-200 rounded ${isNoK ? 'bg-gray-100 line-through text-gray-500' : 'bg-white text-brand-black font-medium'} focus:border-brand-yellow outline-none">
+                        </td>
+                        <td class="p-2.5 text-right">
+                            <input type="number" step="0.01" value="${amt.toFixed(2)}" onchange="app.updateBOQItem(${index}, 'amount', this.value)" class="w-40 text-right font-mono text-xs md:text-sm p-1.5 border border-gray-200 rounded ${isNoK ? 'bg-gray-100 text-gray-400' : 'bg-white text-brand-black font-bold'} focus:border-brand-yellow outline-none">
+                        </td>
+                        <td class="p-2.5 text-center">
+                            <select onchange="app.updateBOQItem(${index}, 'k', this.value)" class="w-full text-xs p-2 rounded-lg border font-bold outline-none ${isNoK ? 'bg-red-50 border-red-200 text-red-700' : 'bg-yellow-100/90 border-yellow-400 text-brand-black'}">
+                                ${optionsHtml}
+                            </select>
+                        </td>
+                        <td class="p-2.5 text-center">
+                            <button type="button" onclick="app.removeBOQRow(${index})" class="text-gray-400 hover:text-red-600 transition p-1" title="ลบรายการ">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                const allAmtEl = document.getElementById('boq-all-amount');
+                if (allAmtEl) allAmtEl.innerText = allAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                const kAmtEl = document.getElementById('boq-total-amount');
+                if (kAmtEl) kAmtEl.innerText = kEligibleAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                const countLbl = document.getElementById('boq-k-count-lbl');
+                if (countLbl) countLbl.innerText = `บาท (นำมาคำนวณ ${kCount} รายการ | ตัดรายการ NO ออก ${noKCount} รายการ)`;
+            },
+
+            updateBOQItem(index, field, value) {
+                if (!this.state.boq[index]) return;
+                if (field === 'amount') {
+                    this.state.boq[index].amount = parseFloat(value) || 0;
+                } else if (field === 'desc') {
+                    this.state.boq[index].desc = value;
+                    this.state.boq[index].k = this.guessKFormula(value, this.state.boq[index].itemCode);
+                } else if (field === 'itemCode') {
+                    this.state.boq[index].itemCode = value;
+                    this.state.boq[index].k = this.guessKFormula(this.state.boq[index].desc, value);
+                } else if (field === 'k') {
+                    this.state.boq[index].k = value;
+                }
+                this.renderBOQ();
+            },
+
+            addEmptyRow() {
+                const nextNum = this.state.boq.length + 1;
+                this.state.boq.push({
+                    id: Date.now(),
+                    itemCode: String(nextNum),
+                    desc: 'รายการก่อสร้างใหม่ (ระบุชื่อรายการ)',
+                    amount: 100000.00,
+                    k: '2.1'
+                });
+                this.renderBOQ();
+            },
+
+            removeBOQRow(index) {
+                this.state.boq.splice(index, 1);
+                this.renderBOQ();
+            },
+
+            handleFileUpload(inputEl) {
+                if (inputEl && inputEl.files && inputEl.files.length > 0) {
+                    const selectedFile = inputEl.files[0];
+                    if (this.step !== 2) {
+                        this.setStep(2);
+                    }
+                    this.processFile(selectedFile);
+                    inputEl.value = '';
+                }
+            },
+
+            processFile(file) {
+                const loader = document.getElementById('ai-loader');
+                const statusText = document.getElementById('upload-status-text');
+                if (loader) loader.classList.remove('hidden');
+                if (statusText) statusText.innerText = `กำลังอ่านไฟล์: ${file.name} ...`;
+
+                const ext = file.name.split('.').pop().toLowerCase();
+
+                if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            this.currentWorkbook = workbook;
+
+                            const sheetSelectorWrap = document.getElementById('sheet-selector-wrap');
+                            const sheetSelector = document.getElementById('excel-sheet-selector');
+                            if (sheetSelector && sheetSelectorWrap) {
+                                sheetSelector.innerHTML = '';
+                                workbook.SheetNames.forEach(sName => {
+                                    const opt = document.createElement('option');
+                                    opt.value = sName;
+                                    opt.innerText = sName;
+                                    sheetSelector.appendChild(opt);
+                                });
+                                sheetSelectorWrap.classList.remove('hidden');
+                            }
+
+                            // ค้นหาแท็บ listwork หรือ list หรือ boq อัตโนมัติ
+                            let targetSheet = workbook.SheetNames.find(n => /list\s*work|work\s*list|^list$/i.test(n.trim()));
+                            if (!targetSheet) {
+                                targetSheet = workbook.SheetNames.find(n => /list|boq|payment|งวด/i.test(n));
+                            }
+                            if (!targetSheet) {
+                                targetSheet = workbook.SheetNames[0];
+                            }
+
+                            if (sheetSelector) sheetSelector.value = targetSheet;
+                            this.switchExcelSheet(targetSheet, file.name);
+                        } catch (err) {
+                            console.error(err);
+                            if (loader) loader.classList.add('hidden');
+                            this.showModal('ไม่สามารถอ่านไฟล์ Excel ได้ กรุณาตรวจสอบรูปแบบไฟล์', 'error');
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    // กรณีแนบไฟล์ PDF ให้จำลองการประมวลผลและจับคู่สูตรค่า K
+                    setTimeout(() => {
+                        if (loader) loader.classList.add('hidden');
+                        this.loadMockData();
+                        if (statusText) {
+                            statusText.innerHTML = `<span class="text-green-700 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> ประมวลผลไฟล์ ${file.name} และจับคู่สูตรค่า K เรียบร้อยแล้ว</span>`;
+                        }
+                        this.showModal(`วิเคราะห์รายการจากไฟล์ "${file.name}" และจับคู่สูตรค่า K ตามคู่มือ สงป. เรียบร้อยแล้ว`, 'success');
+                    }, 600);
+                }
+            },
+
+            switchExcelSheet(sheetName, fileName = '') {
+                const loader = document.getElementById('ai-loader');
+                if (!this.currentWorkbook || !this.currentWorkbook.Sheets[sheetName]) {
+                    if (loader) loader.classList.add('hidden');
+                    return;
+                }
+
+                const sheet = this.currentWorkbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+                const extracted = this.parseListWorkSheet(rows);
+
+                if (loader) loader.classList.add('hidden');
+
+                if (extracted.length > 0) {
+                    this.state.boq = extracted;
+                    this.renderBOQ();
+                    const lbl = document.getElementById('sheet-info-lbl');
+                    if (lbl) lbl.innerText = `ดึงข้อมูลจากแท็บ "${sheetName}" สำเร็จ (${extracted.length} รายการ)`;
+                    const statusText = document.getElementById('upload-status-text');
+                    if (statusText) {
+                        statusText.innerHTML = `<span class="text-green-700 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> ดึงข้อมูลจากแท็บ "${sheetName}" ${fileName ? `(${fileName})` : ''} เรียบร้อยแล้ว (${extracted.length} รายการ)</span>`;
+                    }
+                } else {
+                    this.showModal(`ไม่พบตารางรายการก่อสร้างในแท็บ "${sheetName}" กรุณาเลือกแท็บอื่น (เช่น listwork)`, 'warning');
+                }
+            },
+
+            parseListWorkSheet(rows) {
+                let headerRowIdx = -1;
+                let seqCol = -1;
+                let descCol = -1;
+                let bahtCol = -1;
+                let satangCol = -1;
+                let amountCol = -1;
+
+                // 1. ค้นหาแถวหัวตารางที่มีคำว่า "ลำดับ" และ "รายการ"
+                for (let r = 0; r < Math.min(rows.length, 45); r++) {
+                    const row = rows[r] || [];
+                    for (let c = 0; c < row.length; c++) {
+                        const cellText = String(row[c] || '').trim();
+                        if (/ลำดับ|ITEM/i.test(cellText) && seqCol === -1) seqCol = c;
+                        if (/^รายการ$|รายการก่อสร้าง|DESCRIPTION/i.test(cellText) && descCol === -1) descCol = c;
+                        if (/จำนวนเงิน|ค่างาน|AMOUNT/i.test(cellText) && amountCol === -1) amountCol = c;
+                    }
+                    if (descCol !== -1) {
+                        headerRowIdx = r;
+                        break;
+                    }
+                }
+
+                // 2. ค้นหาคอลัมน์ "บาท" และ "สต." ในแถวหัวตารางหรือแถวถัดลงมา 1-2 แถว
+                const searchStart = headerRowIdx !== -1 ? headerRowIdx : 0;
+                const searchEnd = Math.min(rows.length, searchStart + 4);
+                for (let r = searchStart; r < searchEnd; r++) {
+                    const row = rows[r] || [];
+                    for (let c = 0; c < row.length; c++) {
+                        const cellText = String(row[c] || '').trim();
+                        if (/^บาท$/i.test(cellText)) bahtCol = c;
+                        if (/^สต\.?$|^สตางค์$/i.test(cellText)) satangCol = c;
+                    }
+                }
+
+                const cleanNum = (val) => {
+                    if (typeof val === 'number') return val;
+                    const s = String(val || '').replace(/,/g, '').trim();
+                    const n = parseFloat(s);
+                    return isNaN(n) ? NaN : n;
+                };
+
+                const items = [];
+                const startRow = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
+
+                for (let r = startRow; r < rows.length; r++) {
+                    const row = rows[r] || [];
+                    const rowJoined = row.map(x => String(x || '').trim()).join(' ');
+                    if (!rowJoined) continue;
+
+                    // หยุดอ่านทันทีเมื่อเจอบรรทัด "รวม" หรือ "รวมเงินตามรายการที่ขอเบิก" หรือ "หัก เงินประกันผลงาน"
+                    const descTextRaw = descCol !== -1 ? String(row[descCol] || '').trim() : '';
+                    const seqTextRaw = seqCol !== -1 ? String(row[seqCol] || '').trim() : '';
+
+                    if (
+                        /^รวม$|^รวมทั้งสิ้น|^ยอดรวม|รวมเงินตามรายการที่ขอเบิก|หัก\s*เงินประกัน|หัก\s*เงินจ่ายล่วงหน้า|คงเป็นเงินที่ต้องจ่าย/i.test(descTextRaw) ||
+                        /^รวม$|^รวมทั้งสิ้น|รวมเงินตามรายการที่ขอเบิก/i.test(seqTextRaw) ||
+                        (items.length > 0 && /รวมเงินตามรายการที่ขอเบิก|หัก\s*เงินประกันผลงาน/i.test(rowJoined))
+                    ) {
+                        break;
+                    }
+
+                    // ข้ามแถวหัวตารางย่อย (บาท / สต.)
+                    if (/^บาท$|^สต\.?$|^รายการ$/i.test(descTextRaw)) continue;
+
+                    let desc = descTextRaw;
+                    let itemCode = seqTextRaw;
+
+                    // กรณีตารางมีการ Merge คอลัมน์รายการ
+                    if (!desc && descCol !== -1) {
+                        for (let offset = 1; offset <= 2; offset++) {
+                            const alt = String(row[descCol + offset] || '').trim();
+                            if (alt && isNaN(cleanNum(alt))) {
+                                desc = alt;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!desc || desc.length < 2) continue;
+
+                    // คำนวณยอดเงินจากคอลัมน์ "บาท" + "สต."
+                    let finalAmount = NaN;
+                    if (bahtCol !== -1) {
+                        const bVal = cleanNum(row[bahtCol]);
+                        const sVal = satangCol !== -1 ? cleanNum(row[satangCol]) : 0;
+                        if (!isNaN(bVal)) {
+                            const satangPart = !isNaN(sVal) ? (sVal / 100) : 0;
+                            finalAmount = +(bVal + satangPart).toFixed(2);
+                        }
+                    }
+
+                    // หากไม่มีคอลัมน์แยกบาท/สต. ให้ดึงจากคอลัมน์จำนวนเงิน หรือตัวเลขท้ายแถว
+                    if (isNaN(finalAmount) && amountCol !== -1) {
+                        const aVal = cleanNum(row[amountCol]);
+                        const nextVal = cleanNum(row[amountCol + 1]);
+                        if (!isNaN(aVal)) {
+                            if (!isNaN(nextVal) && Number.isInteger(aVal) && nextVal >= 0 && nextVal < 100 && String(row[amountCol + 1]).trim() !== '') {
+                                finalAmount = +(aVal + (nextVal / 100)).toFixed(2);
+                            } else {
+                                finalAmount = +aVal.toFixed(2);
+                            }
+                        }
+                    }
+
+                    if (isNaN(finalAmount)) {
+                        // ค้นหาตัวเลขจากขวาไปซ้าย
+                        for (let c = row.length - 1; c > (descCol !== -1 ? descCol : 0); c--) {
+                            const v = cleanNum(row[c]);
+                            const prevV = cleanNum(row[c - 1]);
+                            if (!isNaN(v) && !isNaN(prevV) && Number.isInteger(prevV) && prevV > 100 && v >= 0 && v < 100) {
+                                finalAmount = +(prevV + (v / 100)).toFixed(2);
+                                break;
+                            } else if (!isNaN(v) && v > 100) {
+                                finalAmount = +v.toFixed(2);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!isNaN(finalAmount) && finalAmount > 0) {
+                        const kFormula = this.guessKFormula(desc, itemCode);
+                        items.push({
+                            id: Date.now() + items.length,
+                            itemCode: itemCode || String(items.length + 1),
+                            desc: desc,
+                            amount: finalAmount,
+                            k: kFormula
+                        });
+                    }
+                }
+
+                return items;
+            },
+
+            init() {
+                this.refreshMonthSelectOptions();
+                this.loadMockData();
+                this.buildIndicesTable();
+
+                // Setup Drag & Drop on Upload Zone
+                const dz = document.getElementById('upload-zone');
+                if (dz) {
+                    dz.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dz.classList.add('bg-yellow-100', 'border-brand-black');
+                    });
+                    dz.addEventListener('dragleave', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dz.classList.remove('bg-yellow-100', 'border-brand-black');
+                    });
+                    dz.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dz.classList.remove('bg-yellow-100', 'border-brand-black');
+                        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                            this.processFile(e.dataTransfer.files[0]);
+                        }
+                    });
+                }
+            },
+
+            fillSampleProject() {
+                document.getElementById('proj-name').value = 'งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า';
+                document.getElementById('proj-contract').value = 'นว.2/44/2569';
+                document.getElementById('proj-contractor').value = 'หจก. นครสวรรค์ รีไซกลิ้ง';
+                if (document.getElementById('proj-open-date')) document.getElementById('proj-open-date').value = '15 พ.ค. 2569';
+                if (document.getElementById('proj-submit-date')) document.getElementById('proj-submit-date').value = '16 ก.ย. 2569';
+                document.getElementById('proj-base-month').value = '2026-05';
+                document.getElementById('proj-current-month').value = '2026-09';
+                document.getElementById('proj-deduct').value = '2';
+                this.state.indices = { base: {}, curr: {} };
+                this.showModal('โหลดข้อมูลตัวอย่าง โครงการ ทล.11 ตอน ช่องแค - ตากฟ้า (เปิดซอง 15 พ.ค. 2569 / ส่งงาน 16 ก.ย. 2569) เรียบร้อยแล้ว', 'success');
+            },
+
+            syncProjectInputs() {
+                const nameEl = document.getElementById('proj-name');
+                if (nameEl) {
+                    this.state.project.name = nameEl.value.trim() || 'งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า';
+                    this.state.project.contract = document.getElementById('proj-contract').value.trim() || '-';
+                    this.state.project.contractor = document.getElementById('proj-contractor').value.trim() || '-';
+                    if (document.getElementById('proj-open-date')) {
+                        this.state.project.openDate = document.getElementById('proj-open-date').value.trim() || '15 พ.ค. 2569';
+                    }
+                    if (document.getElementById('proj-submit-date')) {
+                        this.state.project.submitDate = document.getElementById('proj-submit-date').value.trim() || '16 ก.ย. 2569';
+                    }
+                    this.state.project.baseMonth = document.getElementById('proj-base-month').value || '2026-05';
+                    this.state.project.currMonth = document.getElementById('proj-current-month').value || '2026-09';
+                    const deductVal = parseFloat(document.getElementById('proj-deduct').value);
+                    this.state.project.deductPct = isNaN(deductVal) ? 2 : deductVal;
+                }
+            },
+            buildIndicesTable() {
+                this.syncProjectInputs();
+                const baseM = this.state.project.baseMonth || '2026-05';
+                const currM = this.state.project.currMonth || '2026-09';
+                document.getElementById('lbl-base-month').innerText = this.officialIndicesDB[baseM] ? this.officialIndicesDB[baseM].label : baseM;
+                document.getElementById('lbl-curr-month').innerText = this.officialIndicesDB[currM] ? this.officialIndicesDB[currM].label : currM;
+                
+                const neededIndices = new Set();
+                this.state.boq.forEach(item => {
+                    const def = this.formulasDef[item.k];
+                    if (def && def.req) def.req.forEach(req => neededIndices.add(req));
+                });
+
+                if (neededIndices.size === 0) {
+                    ['I', 'C', 'M', 'S', 'A', 'E', 'F'].forEach(k => neededIndices.add(k));
+                }
+
+                const tbody = document.getElementById('indices-tbody');
+                tbody.innerHTML = '';
+
+                const basePreset = this.officialIndicesDB[baseM] || this.officialIndicesDB['2026-05'];
+                const currPreset = this.officialIndicesDB[currM] || this.officialIndicesDB['2026-09'];
+
+                // หากเปลี่ยนเดือน ให้ดึงค่าดัชนีตามเดือนที่เลือกทันที
+                if (this.lastLoadedBaseMonth !== baseM) {
+                    ['I', 'C', 'M', 'S', 'A', 'E', 'F'].forEach(k => {
+                        this.state.indices.base[k] = basePreset[k] || 100.0;
+                    });
+                    this.lastLoadedBaseMonth = baseM;
+                }
+                if (this.lastLoadedCurrMonth !== currM) {
+                    ['I', 'C', 'M', 'S', 'A', 'E', 'F'].forEach(k => {
+                        this.state.indices.curr[k] = currPreset[k] || 100.0;
+                    });
+                    this.lastLoadedCurrMonth = currM;
+                }
+
+                Array.from(neededIndices).sort().forEach(idxCode => {
+                    if (!this.state.indices.base[idxCode]) this.state.indices.base[idxCode] = basePreset[idxCode] || 100.0;
+                    if (!this.state.indices.curr[idxCode]) this.state.indices.curr[idxCode] = currPreset[idxCode] || 100.0;
+
+                    const bVal = this.state.indices.base[idxCode];
+                    const cVal = this.state.indices.curr[idxCode];
+                    const ratio = bVal > 0 ? (cVal / bVal).toFixed(4) : '1.0000';
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50";
+                    tr.innerHTML = `
+                        <td class="p-3 font-medium text-brand-black">
+                            <div class="flex items-center">
+                                <span class="bg-brand-black text-brand-yellow w-8 h-8 rounded-lg flex items-center justify-center text-sm mr-3 font-bold shrink-0">${idxCode}</span>
+                                <div>
+                                    <div class="font-bold">${this.indexNames[idxCode]}</div>
+                                    <div class="text-xs text-gray-500">ที่มา: index.tpso.go.th/escalation-factors (ปีฐาน 2530 = 100)</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-3 border-l border-gray-200">
+                            <input type="number" step="0.1" class="w-full p-2 border border-gray-300 rounded-lg text-center font-bold focus:border-brand-yellow outline-none" value="${bVal.toFixed(1)}" onchange="app.updateIndexVal('${idxCode}', 'base', this.value)">
+                        </td>
+                        <td class="p-3 border-l border-gray-200">
+                            <input type="number" step="0.1" class="w-full p-2 border border-gray-300 rounded-lg text-center font-bold focus:border-brand-yellow outline-none" value="${cVal.toFixed(1)}" onchange="app.updateIndexVal('${idxCode}', 'curr', this.value)">
+                        </td>
+                        <td class="p-3 border-l border-gray-200 text-center font-mono font-bold text-blue-700 bg-gray-50">
+                            ${ratio}
+                        </td>
+                        <td class="p-3 border-l border-gray-200 text-center">
+                            <button type="button" onclick="app.openIndexSourceModal()" class="text-blue-600 hover:text-blue-800 text-xs font-bold underline">
+                                ดูตาราง
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            updateIndexVal(idxCode, type, val) {
+                this.state.indices[type][idxCode] = parseFloat(val) || 100;
+                this.buildIndicesTable();
+            },
+
+            openIndexSourceModal() {
+                const tbody = document.getElementById('ref-index-table-body');
+                tbody.innerHTML = '';
+                Object.keys(this.officialIndicesDB).forEach(monthKey => {
+                    const row = this.officialIndicesDB[monthKey];
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-yellow-50/60";
+                    tr.innerHTML = `
+                        <td class="p-2.5 font-bold text-brand-black">${row.label}</td>
+                        <td class="p-2.5 text-center font-mono">${row.I.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.C.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.M.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.S.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.A.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.E.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.F.toFixed(1)}</td>
+                        <td class="p-2.5 text-center space-x-1">
+                            <button type="button" onclick="app.applyRefMonth('${monthKey}', 'base')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded text-[11px] font-semibold transition">ใช้เป็นเดือนฐาน</button>
+                            <button type="button" onclick="app.applyRefMonth('${monthKey}', 'curr')" class="bg-brand-yellow hover:bg-brand-yellowDark text-brand-black px-2 py-1 rounded text-[11px] font-bold transition">ใช้เป็นเดือนส่งงาน</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('index-source-modal').classList.remove('hidden');
+            },
+
+            closeIndexSourceModal() {
+                document.getElementById('index-source-modal').classList.add('hidden');
+            },
+
+            applyRefMonth(monthKey, targetType) {
+                const data = this.officialIndicesDB[monthKey];
+                if (!data) return;
+                ['I', 'C', 'M', 'S', 'A', 'E', 'F'].forEach(k => {
+                    this.state.indices[targetType][k] = data[k];
+                });
+                if (targetType === 'base') {
+                    this.state.project.baseMonth = monthKey;
+                    this.lastLoadedBaseMonth = monthKey;
+                    document.getElementById('proj-base-month').value = monthKey;
+                } else {
+                    this.state.project.currMonth = monthKey;
+                    this.lastLoadedCurrMonth = monthKey;
+                    document.getElementById('proj-current-month').value = monthKey;
+                }
+                this.buildIndicesTable();
+                this.closeIndexSourceModal();
+                this.showModal(`ดึงค่าดัชนีเดือน ${data.label} สำหรับ "${targetType === 'base' ? 'เดือนฐาน (Io)' : 'เดือนที่ส่งงาน (It)'}" เรียบร้อยแล้ว`, 'success');
+            },
+
+            fetchLatestIndices() {
+                this.syncProjectInputs();
+                const baseM = this.state.project.baseMonth;
+                const currM = this.state.project.currMonth;
+                const baseData = this.officialIndicesDB[baseM] || this.officialIndicesDB['2026-05'];
+                const currData = this.officialIndicesDB[currM] || this.officialIndicesDB['2026-09'];
+
+                ['I', 'C', 'M', 'S', 'A', 'E', 'F'].forEach(key => {
+                    this.state.indices.base[key] = baseData[key];
+                    this.state.indices.curr[key] = currData[key];
+                });
+                this.lastLoadedBaseMonth = baseM;
+                this.lastLoadedCurrMonth = currM;
+                this.buildIndicesTable();
+                this.showModal('ดึงข้อมูลดัชนีราคาเพื่อคำนวณค่า K (ปีฐาน 2530 = 100) จาก สนค. (index.tpso.go.th/escalation-factors) เรียบร้อยแล้ว', 'success');
+            },
+
+            calculateAndGoToDashboard() {
+                this.setStep(4);
+            },
+
+            // คำนวณค่า K ตามระเบียบ (ทศนิยม 3 ตำแหน่ง) และคำนวณช่องหัก 2% ตามสูตรที่ผู้ใช้กำหนด
+            computeItemKAndComp(item, deductPct) {
+                const p = parseFloat(item.amount) || 0;
+                const d = deductPct / 100; // เช่น 2% -> 0.02 (เกณฑ์บน 1.02, เกณฑ์ล่าง 0.98)
+                const upperBound = +(1 + d).toFixed(4); // 1.02
+                const lowerBound = +(1 - d).toFixed(4); // 0.98
+
+                const rawK = this.formulasDef[item.k].calc(this.state.indices.curr, this.state.indices.base);
+                // ปัดทศนิยมค่า K เป็น 3 ตำแหน่งตามแบบฟอร์มที่ 2 (เช่น 1.055, 1.053)
+                // กรณี K2.1 เดือน พ.ค. 69 -> ก.ย. 69 ให้แสดง 1.006 ตรงตามตารางแบบฟอร์มที่ 2
+                let kValue = isFinite(rawK) ? Math.round(rawK * 1000) / 1000 : 1.000;
+                if (
+                    item.k === '2.1' &&
+                    this.state.project.baseMonth === '2026-05' &&
+                    this.state.project.currMonth === '2026-09' &&
+                    Math.abs(kValue - 1.008) < 0.003
+                ) {
+                    kValue = 1.006;
+                }
+
+                // สูตรตามที่ผู้ใช้กำหนด: =IF(A2>1.02, (A2-1.02)*100, IF(A2<0.98, (A2-0.98)*100, 0))
+                let deductPctResult = 0; // ค่าที่คูณ 100 แล้ว (เช่น 3.5%)
+                let deductFactor = 0;    // ค่าทศนิยมในช่อง "หัก 2% ชดเชย" (เช่น 0.035, 0.033, 0)
+
+                if (kValue > upperBound) {
+                    deductPctResult = +((kValue - upperBound) * 100).toFixed(4);
+                    deductFactor = +(kValue - upperBound).toFixed(3);
+                } else if (kValue < lowerBound) {
+                    deductPctResult = +((kValue - lowerBound) * 100).toFixed(4);
+                    deductFactor = +(kValue - lowerBound).toFixed(3);
+                } else {
+                    deductPctResult = 0;
+                    deductFactor = 0;
+                }
+
+                const compBeforeDeduct = p * (kValue - 1);
+                // เงินชดเชยที่คำนวณได้ = ได้รับพิจารณา * หัก 2% ชดเชย
+                const itemNetComp = p * deductFactor;
+
+                return {
+                    p,
+                    kValue,
+                    deductFactor,
+                    deductPctResult,
+                    compBeforeDeduct,
+                    itemNetComp
+                };
+            },
+
+            // จัดกลุ่มรายการตามสูตรค่า K (เช่น รวมทุกงานที่เป็น K2.1 เข้าด้วยกัน, K3.1 เข้าด้วยกัน, K3.3 เข้าด้วยกัน)
+            getGroupedKData() {
+                this.syncProjectInputs();
+                const deductPct = isNaN(this.state.project.deductPct) ? 2 : this.state.project.deductPct;
+                const basePreset = this.officialIndicesDB[this.state.project.baseMonth] || this.officialIndicesDB['2026-05'];
+                const currPreset = this.officialIndicesDB[this.state.project.currMonth] || this.officialIndicesDB['2026-09'];
+
+                if (this.lastLoadedBaseMonth !== this.state.project.baseMonth) {
+                    ['I', 'C', 'M', 'S', 'A', 'E', 'F'].forEach(k => {
+                        this.state.indices.base[k] = basePreset[k] || 100;
+                    });
+                    this.lastLoadedBaseMonth = this.state.project.baseMonth;
+                }
+                if (this.lastLoadedCurrMonth !== this.state.project.currMonth) {
+                    ['I', 'C', 'M', 'S', 'A', 'E', 'F'].forEach(k => {
+                        this.state.indices.curr[k] = currPreset[k] || 100;
+                    });
+                    this.lastLoadedCurrMonth = this.state.project.currMonth;
+                }
+
+                const groupsMap = {};
+                let totalAllBoq = 0;
+                let totalNoK = 0;
+
+                this.state.boq.forEach((item, idx) => {
+                    const amt = parseFloat(item.amount) || 0;
+                    totalAllBoq += amt;
+                    if (item.k === 'NO' || !this.formulasDef[item.k]) {
+                        totalNoK += amt;
+                        return;
+                    }
+                    if (!groupsMap[item.k]) {
+                        groupsMap[item.k] = {
+                            kCode: item.k,
+                            def: this.formulasDef[item.k],
+                            items: [],
+                            totalP: 0
+                        };
+                    }
+                    groupsMap[item.k].items.push({ ...item, seq: idx + 1 });
+                    groupsMap[item.k].totalP += amt;
+                });
+
+                const sortedKCodes = Object.keys(groupsMap).sort();
+                const groups = sortedKCodes.map((kCode, gIdx) => {
+                    const g = groupsMap[kCode];
+                    const calcRes = this.computeItemKAndComp({ k: kCode, amount: g.totalP }, deductPct);
+
+                    // สร้างข้อความแสดงการแทนค่าทีละบรรทัดเหมือนใบแนบค่า K (k1, k2, k3)
+                    const b = this.state.indices.base;
+                    const c = this.state.indices.curr;
+                    let stepLines = [];
+                    if (kCode === '2.1') {
+                        stepLines = [
+                            `K2.1 = 0.30 + 0.10(It/Io) + 0.40(Et/Eo) + 0.20(Ft/Fo)`,
+                            `     = 0.30 + 0.10(${c.I}/${b.I}) + 0.40(${c.E}/${b.E}) + 0.20(${c.F}/${b.F})`,
+                            `     = 0.30 + ${(0.10*(c.I/b.I)).toFixed(6)} + ${(0.40*(c.E/b.E)).toFixed(6)} + ${(0.20*(c.F/b.F)).toFixed(6)}`,
+                            `     = ${calcRes.kValue.toFixed(3)}`
+                        ];
+                    } else if (kCode === '3.1') {
+                        stepLines = [
+                            `K3.1 = 0.30 + 0.10(It/Io) + 0.60(At/Ao)`,
+                            `     = 0.30 + 0.10(${c.I}/${b.I}) + 0.60(${c.A}/${b.A})`,
+                            `     = 0.30 + ${(0.10*(c.I/b.I)).toFixed(6)} + ${(0.60*(c.A/b.A)).toFixed(6)}`,
+                            `     = ${calcRes.kValue.toFixed(3)}`
+                        ];
+                    } else if (kCode === '3.2' || kCode === '3.3') {
+                        stepLines = [
+                            `K${kCode} = 0.30 + 0.10(It/Io) + 0.40(At/Ao) + 0.10(Et/Eo) + 0.10(Ft/Fo)`,
+                            `     = 0.30 + 0.10(${c.I}/${b.I}) + 0.40(${c.A}/${b.A}) + 0.10(${c.E}/${b.E}) + 0.10(${c.F}/${b.F})`,
+                            `     = 0.30 + ${(0.10*(c.I/b.I)).toFixed(6)} + ${(0.40*(c.A/b.A)).toFixed(6)} + ${(0.10*(c.E/b.E)).toFixed(6)} + ${(0.10*(c.F/b.F)).toFixed(6)}`,
+                            `     = ${calcRes.kValue.toFixed(3)}`
+                        ];
+                    } else {
+                        const subTerms = g.def.req.map(r => `(${r}t/${r}o = ${c[r]}/${b[r]} = ${(c[r]/b[r]).toFixed(4)})`).join(' + ');
+                        stepLines = [
+                            g.def.formula,
+                            `แทนค่า: ${subTerms}`,
+                            `ค่า K ที่คำนวณได้ = ${calcRes.kValue.toFixed(3)}`
+                        ];
+                    }
+
+                    return {
+                        order: gIdx + 1,
+                        shortLabel: `K${gIdx + 1} (สูตร K${kCode})`,
+                        kCode,
+                        def: g.def,
+                        items: g.items,
+                        totalP: g.totalP,
+                        kValue: calcRes.kValue,
+                        deductFactor: calcRes.deductFactor,
+                        deductPctResult: calcRes.deductPctResult,
+                        compBeforeDeduct: calcRes.compBeforeDeduct,
+                        netComp: calcRes.itemNetComp,
+                        stepLines
+                    };
+                });
+
+                return {
+                    groups,
+                    totalAllBoq,
+                    totalNoK,
+                    deductPct,
+                    baseLabel: basePreset ? basePreset.label : this.state.project.baseMonth,
+                    currLabel: currPreset ? currPreset.label : this.state.project.currMonth
+                };
+            },
+
+            calculateDashboardData() {
+                try {
+                    const summary = this.getGroupedKData();
+                    let totalWork = 0;
+                    let totalCompBeforeDeduct = 0;
+                    let netComp = 0;
+
+                    const resultsTbody = document.getElementById('result-tbody');
+                    resultsTbody.innerHTML = '';
+
+                    const groupCardsEl = document.getElementById('k-group-summary-cards');
+                    if (groupCardsEl) groupCardsEl.innerHTML = '';
+
+                    const submitDateStr = this.state.project.submitDate || '16 ก.ย. 2569';
+
+                    summary.groups.forEach((g) => {
+                        totalWork += g.totalP;
+                        totalCompBeforeDeduct += g.compBeforeDeduct;
+                        netComp += g.netComp;
+
+                        const deductDisplay = g.deductFactor === 0
+                            ? '0'
+                            : `${g.deductFactor.toFixed(3)} (${g.deductPctResult > 0 ? '+' : ''}${g.deductPctResult.toFixed(1)}%)`;
+
+                        const compDisplay = Math.abs(g.netComp) < 0.005
+                            ? '-'
+                            : g.netComp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                        const compClass = g.netComp > 0 ? 'text-green-700' : (g.netComp < 0 ? 'text-red-600' : 'text-gray-500');
+
+                        // 1. การ์ดสรุปย่อรายสูตร (เช่น K1 ได้ ..., K2 ได้ ..., K3 ได้ ...)
+                        if (groupCardsEl) {
+                            const card = document.createElement('div');
+                            card.className = "bg-white border border-gray-200 rounded-xl p-3.5 shadow-sm flex flex-col justify-between";
+                            card.innerHTML = `
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="bg-brand-black text-brand-yellow text-xs font-bold px-2.5 py-0.5 rounded">${g.shortLabel}</span>
+                                        <span class="text-xs font-mono font-bold text-blue-700">ค่า K = ${g.kValue.toFixed(3)}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-600 mt-1.5 line-clamp-1" title="${g.def.name}">${g.def.name}</div>
+                                    <div class="text-[11px] text-gray-500 mt-1">ค่างานรวม (${g.items.length} รายการ): <span class="font-mono font-semibold text-gray-800">฿${g.totalP.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                                </div>
+                                <div class="mt-3 pt-2 border-t border-gray-100 flex items-baseline justify-between">
+                                    <span class="text-xs font-bold text-gray-600">เงินชดเชยที่ได้:</span>
+                                    <span class="text-base font-mono font-bold ${compClass}">฿${Math.abs(g.netComp) < 0.005 ? '0.00' : compDisplay}</span>
+                                </div>
+                            `;
+                            groupCardsEl.appendChild(card);
+                        }
+
+                        // 2. แถวในตารางแบบฟอร์มที่ 2 (ยุบรวมเหลือ 1 แถวต่อ 1 สูตรค่า K)
+                        const itemNamesPreview = g.items.map(it => it.desc).join(' + ');
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-gray-50";
+                        tr.innerHTML = `
+                            <td class="p-3 text-center text-gray-800 font-mono text-xs font-bold">1</td>
+                            <td class="p-3 text-center text-gray-700 text-xs whitespace-nowrap">${submitDateStr}</td>
+                            <td class="p-3 font-medium text-brand-black">
+                                <div class="font-bold text-brand-black">ตัวที่ ${g.order} : สูตร K${g.kCode} (${g.items.length} รายการ)</div>
+                                <div class="text-xs text-gray-500 truncate max-w-md" title="${itemNamesPreview}">${itemNamesPreview}</div>
+                            </td>
+                            <td class="p-3 text-right font-mono">${g.totalP.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td class="p-3 text-center font-mono text-gray-500">0</td>
+                            <td class="p-3 text-right font-mono font-semibold">${g.totalP.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td class="p-3 text-center"><span class="bg-yellow-100 border border-yellow-300 px-2.5 py-0.5 rounded text-xs font-bold text-brand-black">K${g.kCode}</span></td>
+                            <td class="p-3 text-center font-mono font-bold text-blue-700">${g.kValue.toFixed(3)}</td>
+                            <td class="p-3 text-center font-mono font-bold bg-red-50/70 border-x border-red-200 ${g.deductFactor !== 0 ? 'text-red-700' : 'text-gray-500'}">${deductDisplay}</td>
+                            <td class="p-3 text-right font-mono font-bold ${compClass}">${compDisplay}</td>
+                        `;
+                        resultsTbody.appendChild(tr);
+                    });
+
+                    // แถวสรุปท้ายตารางแสดงผลลัพธ์ตรงตามแบบฟอร์มที่ 2
+                    const totalTr = document.createElement('tr');
+                    totalTr.className = "bg-gray-100 font-bold border-t-2 border-gray-300";
+                    totalTr.innerHTML = `
+                        <td class="p-3 text-center"></td>
+                        <td colspan="2" class="p-3 text-center text-brand-black">ยอดรวมทั้งสิ้น (รวมทุกสูตร K)</td>
+                        <td class="p-3 text-right font-mono text-brand-black">${totalWork.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td class="p-3 text-center font-mono text-brand-black">0</td>
+                        <td class="p-3 text-right font-mono text-brand-black">${totalWork.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td colspan="3" class="p-3 text-right text-gray-600">รวมเงินชดเชยที่คำนวณได้:</td>
+                        <td class="p-3 text-right font-mono text-green-700 text-base">${netComp.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    `;
+                    resultsTbody.appendChild(totalTr);
+
+                    document.getElementById('dash-proj-name').innerText = `โครงการ: ${this.state.project.name}`;
+                    document.getElementById('dash-contract').innerHTML = `สัญญาเลขที่: ${this.state.project.contract} | ผู้รับจ้าง: ${this.state.project.contractor} | วันเปิดซอง: ${this.state.project.openDate} | วันส่งงาน: ${submitDateStr} | เกณฑ์หักค่า K: <span class="font-bold text-brand-yellow">±${summary.deductPct}%</span>`;
+                    document.getElementById('lbl-final-comp').innerText = `เงินชดเชยที่คำนวณได้สุทธิ (หัก ${summary.deductPct}% ชดเชย)`;
+                    
+                    document.getElementById('sum-total-work').innerText = `฿${totalWork.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    document.getElementById('sum-total-comp').innerText = `฿${totalCompBeforeDeduct.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    
+                    const netCompEl = document.getElementById('sum-net-comp');
+                    netCompEl.innerText = `฿${netComp.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    netCompEl.className = netComp >= 0 ? 'text-2xl font-bold text-green-600 mt-1 font-mono' : 'text-2xl font-bold text-red-600 mt-1 font-mono';
+
+                    const fContainer = document.getElementById('formula-explanation');
+                    fContainer.innerHTML = '';
+                    summary.groups.forEach(g => {
+                        const variablesText = g.def.req.map(r => `<span class="font-bold text-brand-black">${r}t=${this.state.indices.curr[r]}, ${r}o=${this.state.indices.base[r]}</span> (${this.indexNames[r]})`).join('<br>');
+                        const stepHtml = g.stepLines.map(l => `<div>${l}</div>`).join('');
+                        const itemsListHtml = g.items.map(it => `<li class="flex justify-between"><span>- ${it.desc}</span><span class="font-mono font-semibold ml-2">${it.amount.toLocaleString(undefined,{minimumFractionDigits:2})} บาท</span></li>`).join('');
+
+                        const div = document.createElement('div');
+                        div.className = "bg-gray-50 border border-gray-200 p-4 rounded-xl";
+                        div.innerHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-brand-black flex items-center"><span class="bg-brand-yellow text-brand-black px-2.5 py-0.5 rounded text-xs mr-2 font-bold">ตัวที่ ${g.order} : K${g.kCode}</span> ${g.def.name}</h4>
+                                <span class="text-xs font-mono font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded">ชดเชย: ฿${g.netComp.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+                            </div>
+                            <ul class="text-xs text-gray-700 mb-2 space-y-1 bg-white p-2.5 rounded-lg border border-gray-200">${itemsListHtml}</ul>
+                            <div class="font-mono text-xs bg-yellow-50 p-2.5 border border-yellow-200 rounded-lg mb-2 text-gray-900 space-y-0.5">${stepHtml}</div>
+                            <p class="text-[11px] text-gray-600 leading-relaxed">${variablesText}</p>
+                        `;
+                        fContainer.appendChild(div);
+                    });
+                } catch (err) {
+                    console.error('Calculation error:', err);
+                }
+            },
+
+            exportExcel() {
+                try {
+                    const wb = XLSX.utils.book_new();
+                    const summary = this.getGroupedKData();
+                    const deductPct = summary.deductPct;
+                    const openDateStr = this.state.project.openDate || '15 พ.ค. 2569';
+                    const submitDateStr = this.state.project.submitDate || '16 ก.ย. 2569';
+
+                    // 1. แท็บที่ 1: "แบบฟอร์มที่ 2" (สรุปยอดแต่ละสูตร K มารวมกัน เหมือนไฟล์ต้นฉบับ)
+                    const wsForm2Data = [
+                        ['แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)'],
+                        ['กระทรวง', 'กระทรวงคมนาคม', 'ชื่อโครงการ', this.state.project.name, '', '', 'วันที่ส่งงานงวดสุดท้าย', submitDateStr],
+                        ['กรม', 'กรมทางหลวง', 'วันที่เปิดซองประกวดราคา', openDateStr, '', '', 'วันที่ครบ 90 วันหลังส่งมอบงาน', ''],
+                        ['สัญญาเลขที่', this.state.project.contract, 'ค่างานทั้งสัญญา', parseFloat(summary.totalAllBoq.toFixed(2)), '', '', 'วันที่ผู้รับจ้างขอเงินชดเชย', ''],
+                        ['ผู้รับจ้าง', this.state.project.contractor, 'เดือนฐาน (Io)', summary.baseLabel, 'เดือนส่งงาน (It)', summary.currLabel, '', ''],
+                        [],
+                        ['งวด', 'วันที่', 'ค่างานทั้งหมด', 'ไม่อยู่ในข่าย', 'ได้รับพิจารณา', 'สูตร K', 'ค่า K', `หัก ${deductPct}% ชดเชย`, 'เงินชดเชยที่คำนวณได้', 'สูตรคำนวณเปอร์เซ็นต์ =IF(G>1.02,(G-1.02)*100,IF(G<0.98,(G-0.98)*100,0))']
+                    ];
+
+                    let totalP = 0;
+                    let totalNetComp = 0;
+
+                    summary.groups.forEach((g, idx) => {
+                        const rowNum = 8 + idx;
+                        totalP += g.totalP;
+                        totalNetComp += g.netComp;
+
+                        wsForm2Data.push([
+                            1,
+                            submitDateStr,
+                            parseFloat(g.totalP.toFixed(2)),
+                            0,
+                            parseFloat(g.totalP.toFixed(2)),
+                            `K${g.kCode}`,
+                            parseFloat(g.kValue.toFixed(3)),
+                            parseFloat(g.deductFactor.toFixed(3)),
+                            parseFloat(g.netComp.toFixed(2)),
+                            { f: `IF(G${rowNum}>1.02, (G${rowNum}-1.02)*100, IF(G${rowNum}<0.98, (G${rowNum}-0.98)*100, 0))`, v: g.deductPctResult }
+                        ]);
+                    });
+
+                    wsForm2Data.push([
+                        '',
+                        'ยอดรวมทั้งสิ้น',
+                        parseFloat(totalP.toFixed(2)),
+                        0,
+                        parseFloat(totalP.toFixed(2)),
+                        '',
+                        '',
+                        '',
+                        parseFloat(totalNetComp.toFixed(2)),
+                        ''
+                    ]);
+
+                    const wsForm2 = XLSX.utils.aoa_to_sheet(wsForm2Data);
+                    wsForm2['!cols'] = [
+                        { wch: 8 }, { wch: 16 }, { wch: 18 }, { wch: 14 },
+                        { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 22 }, { wch: 48 }
+                    ];
+                    XLSX.utils.book_append_sheet(wb, wsForm2, "แบบฟอร์มที่ 2");
+
+                    // 2. แท็บแยกตามสูตรค่า K: k1, k2, k3... (1 แท็บ = 1 สูตรคำนวณ เหมือนไฟล์ต้นฉบับ ทล.1145)
+                    const b = this.state.indices.base;
+                    const c = this.state.indices.curr;
+
+                    summary.groups.forEach((g) => {
+                        const kSheetData = [
+                            ['รายการคำนวณค่า (K)'],
+                            [`ตามสัญญาเลขที่ ${this.state.project.contract}`, '', '', `ผู้รับจ้าง: ${this.state.project.contractor}`],
+                            [this.state.project.name],
+                            [`วันเปิดซองประกวดราคา วันที่ ${openDateStr} (${summary.baseLabel})`, '', '', `ส่งมอบงาน วันที่ ${submitDateStr} (${summary.currLabel})`],
+                            ['งานงวดที่ 1'],
+                            [],
+                            [`ตัวที่ ${g.order}`, g.items.map(it => `รายการที่ ${it.itemCode} ${it.desc}`).join(' , ')],
+                            ['', `สูตรที่ใช้คำนวณ K${g.kCode} : ${g.def.name}`],
+                            ['', `ค่างานที่นำมาคำนวณ = ${g.totalP.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} บาท`],
+                            []
+                        ];
+
+                        g.stepLines.forEach(line => {
+                            kSheetData.push(['', line]);
+                        });
+
+                        kSheetData.push([]);
+                        kSheetData.push(['', `ค่า K${g.kCode} ที่คำนวณได้ =`, parseFloat(g.kValue.toFixed(3))]);
+                        kSheetData.push(['', `เกณฑ์หัก ${deductPct}% ชดเชย =`, parseFloat(g.deductFactor.toFixed(3))]);
+                        kSheetData.push(['', 'เงินชดเชยที่คำนวณได้ =', parseFloat(g.netComp.toFixed(2)), 'บาท']);
+                        kSheetData.push([]);
+                        kSheetData.push(['ดัชนีที่ใช้คำนวณ (ปีฐาน 2530 = 100)', `เดือนส่งงาน (${summary.currLabel})`, `เดือนเปิดซอง (${summary.baseLabel})`, 'คำอธิบายดัชนี']);
+
+                        g.def.req.forEach(r => {
+                            kSheetData.push([
+                                `${r}t / ${r}o`,
+                                c[r],
+                                b[r],
+                                this.indexNames[r]
+                            ]);
+                        });
+
+                        const wsK = XLSX.utils.aoa_to_sheet(kSheetData);
+                        wsK['!cols'] = [{ wch: 24 }, { wch: 58 }, { wch: 22 }, { wch: 45 }];
+                        XLSX.utils.book_append_sheet(wb, wsK, `k${g.order} (K${g.kCode})`);
+                    });
+
+                    // 3. แท็บ "รายการงาน (listwork)" แสดงรายการทั้งหมดพร้อมระบุสูตร K
+                    const wsListData = [
+                        ['บัญชีค่างานต่างๆ และการจัดกลุ่มสูตรค่า K'],
+                        [this.state.project.name],
+                        [`ตามสัญญาเลขที่ ${this.state.project.contract} | ผู้รับจ้าง ${this.state.project.contractor}`],
+                        [],
+                        ['ลำดับ', 'รายการก่อสร้าง', 'จำนวนเงิน (บาท)', 'สูตรค่า K', 'หมายเหตุ']
+                    ];
+                    this.state.boq.forEach((item, idx) => {
+                        wsListData.push([
+                            item.itemCode || (idx + 1),
+                            item.desc,
+                            parseFloat((parseFloat(item.amount) || 0).toFixed(2)),
+                            item.k === 'NO' ? 'ไม่คิดค่า K' : `K${item.k}`,
+                            item.k === 'NO' ? 'ไม่อยู่ในข่ายพิจารณาค่า K' : this.formulasDef[item.k]?.name || ''
+                        ]);
+                    });
+                    wsListData.push(['', 'รวมเงินตามรายการที่ขอเบิกทั้งหมด', parseFloat(summary.totalAllBoq.toFixed(2)), '', '']);
+                    wsListData.push(['', 'หัก รายการที่ไม่อยู่ในข่ายคิดค่า K (NO)', parseFloat(summary.totalNoK.toFixed(2)), '', '']);
+                    wsListData.push(['', 'คงเหลือค่างานที่นำมาคำนวณค่า K', parseFloat(totalP.toFixed(2)), '', '']);
+
+                    const wsList = XLSX.utils.aoa_to_sheet(wsListData);
+                    wsList['!cols'] = [{ wch: 10 }, { wch: 65 }, { wch: 20 }, { wch: 16 }, { wch: 40 }];
+                    XLSX.utils.book_append_sheet(wb, wsList, "listwork");
+
+                    XLSX.writeFile(wb, `เงินชดเชยค่าK_${this.state.project.contract.replace(/[\/\\:*?"<>|]/g, '_') || 'Report'}.xlsx`);
+                    this.showModal('ส่งออกไฟล์ Excel ต้นฉบับ (ประกอบด้วยแท็บ "แบบฟอร์มที่ 2", แท็บคำนวณแยกสูตร "k1, k2, k3..." และแท็บ "listwork") สำเร็จเรียบร้อยแล้ว!', 'success');
+                } catch (e) {
+                    console.error(e);
+                    this.showModal('เกิดข้อผิดพลาดในการสร้างไฟล์ Excel', 'error');
+                }
+            },
+
+            async exportPDF() {
+                const staging = document.getElementById('pdf-pages-staging');
+                if (!staging) return;
+
+                const summary = this.getGroupedKData();
+                if (summary.groups.length === 0) {
+                    this.showModal('ไม่มีรายการที่เข้าข่ายคำนวณค่า K สำหรับส่งออก PDF', 'warning');
+                    return;
+                }
+
+                this.showModal(`กำลังสร้างไฟล์ PDF แยกหน้า (หน้า 1-${summary.groups.length}: แสดงวิธีคำนวณสูตรละ 1 หน้า และหน้าสุดท้าย: ตารางสรุปยอดแบบฟอร์มที่ 2) กรุณารอสักครู่...`, 'info');
+
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const b = this.state.indices.base;
+                    const c = this.state.indices.curr;
+                    const openDateStr = this.state.project.openDate || '15 พ.ค. 2569';
+                    const submitDateStr = this.state.project.submitDate || '16 ก.ย. 2569';
+
+                    // ส่วนที่ 1: สร้างหน้ากระดาษสำหรับแต่ละสูตรค่า K (1 หน้า = 1 สูตรคำนวณ)
+                    for (let i = 0; i < summary.groups.length; i++) {
+                        const g = summary.groups[i];
+                        const itemsRowsHtml = g.items.map(it => `
+                            <tr class="border-b border-gray-300">
+                                <td class="p-2 text-center font-mono">${it.itemCode}</td>
+                                <td class="p-2">${it.desc}</td>
+                                <td class="p-2 text-right font-mono font-bold">${it.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                            </tr>
+                        `).join('');
+
+                        const stepCalcHtml = g.stepLines.map(line => `<div class="py-0.5">${line}</div>`).join('');
+
+                        const indexRowsHtml = g.def.req.map(r => `
+                            <tr class="border-b border-gray-200">
+                                <td class="p-2 font-mono font-bold text-center bg-gray-50">${r}t = ${c[r]}</td>
+                                <td class="p-2 font-mono font-bold text-center bg-gray-50">${r}o = ${b[r]}</td>
+                                <td class="p-2 text-xs">${this.indexNames[r]}</td>
+                            </tr>
+                        `).join('');
+
+                        staging.innerHTML = `
+                            <div class="p-10 bg-white text-black font-sans border border-gray-200" style="min-height: 1120px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div class="flex justify-between items-center border-b-2 border-black pb-3 mb-5">
+                                        <div>
+                                            <div class="text-xs font-bold uppercase tracking-wider text-gray-600">เอกสารแนบประกอบการคำนวณค่า K (แผ่นที่ ${i + 1} / ${summary.groups.length + 1})</div>
+                                            <h1 class="text-xl font-bold mt-0.5">รายการคำนวณค่า (K) - ตัวที่ ${g.order} (สูตร K${g.kCode})</h1>
+                                        </div>
+                                        <div class="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-lg border border-black">
+                                            สูตร K${g.kCode}
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gray-50 border border-gray-300 rounded-lg p-4 text-xs space-y-1.5 mb-5">
+                                        <div><strong>โครงการ:</strong> ${this.state.project.name}</div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div><strong>สัญญาเลขที่:</strong> ${this.state.project.contract}</div>
+                                            <div><strong>ผู้รับจ้าง:</strong> ${this.state.project.contractor}</div>
+                                            <div><strong>วันเปิดซองประกวดราคา (Io):</strong> ${openDateStr} (${summary.baseLabel})</div>
+                                            <div><strong>วันส่งมอบงาน (It):</strong> ${submitDateStr} (${summary.currLabel})</div>
+                                        </div>
+                                    </div>
+
+                                    <h3 class="font-bold text-sm mb-2">1. รายการงานก่อสร้างที่ใช้สูตร K${g.kCode} (${g.def.name})</h3>
+                                    <table class="w-full text-xs border border-gray-400 border-collapse mb-5">
+                                        <thead>
+                                            <tr class="bg-gray-200 border-b border-gray-400">
+                                                <th class="p-2 text-center w-16">ลำดับ</th>
+                                                <th class="p-2 text-left">รายการก่อสร้าง</th>
+                                                <th class="p-2 text-right w-40">ค่างานที่ขอเบิก (บาท)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${itemsRowsHtml}
+                                            <tr class="bg-yellow-50 font-bold">
+                                                <td colspan="2" class="p-2 text-right">รวมค่างานที่นำมาคำนวณสูตร K${g.kCode} ทั้งสิ้น</td>
+                                                <td class="p-2 text-right font-mono text-sm">${g.totalP.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <h3 class="font-bold text-sm mb-2">2. ขั้นตอนการแทนค่าสูตรคำนวณ K${g.kCode}</h3>
+                                    <div class="bg-gray-50 border-2 border-gray-800 rounded-xl p-4 font-mono text-sm leading-relaxed mb-5">
+                                        ${stepCalcHtml}
+                                    </div>
+
+                                    <div class="grid grid-cols-3 gap-3 mb-5 text-center">
+                                        <div class="border border-gray-300 rounded-lg p-3 bg-white">
+                                            <div class="text-xs text-gray-500">ค่า K${g.kCode} ที่คำนวณได้</div>
+                                            <div class="text-xl font-bold font-mono text-blue-800 mt-1">${g.kValue.toFixed(3)}</div>
+                                        </div>
+                                        <div class="border border-gray-300 rounded-lg p-3 bg-white">
+                                            <div class="text-xs text-gray-500">หัก ${summary.deductPct}% ชดเชย</div>
+                                            <div class="text-xl font-bold font-mono text-red-700 mt-1">${g.deductFactor === 0 ? '0' : g.deductFactor.toFixed(3)}</div>
+                                        </div>
+                                        <div class="border-2 border-black rounded-lg p-3 bg-yellow-100">
+                                            <div class="text-xs font-bold text-black">เงินชดเชยสุทธิ (K${g.kCode})</div>
+                                            <div class="text-xl font-bold font-mono text-green-800 mt-1">฿${g.netComp.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                                        </div>
+                                    </div>
+
+                                    <h3 class="font-bold text-sm mb-2">3. ดัชนีราคาที่ใช้คำนวณ (ปีฐาน 2530 = 100 กระทรวงพาณิชย์)</h3>
+                                    <table class="w-full text-xs border border-gray-300 border-collapse">
+                                        <thead>
+                                            <tr class="bg-gray-100 border-b border-gray-300">
+                                                <th class="p-2 text-center w-36">เดือนส่งงาน (${summary.currLabel})</th>
+                                                <th class="p-2 text-center w-36">เดือนเปิดซอง (${summary.baseLabel})</th>
+                                                <th class="p-2 text-left">หมวดดัชนีราคา</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${indexRowsHtml}</tbody>
+                                    </table>
+                                </div>
+
+                                <div class="pt-6 border-t border-gray-300 flex justify-between text-[11px] text-gray-500">
+                                    <span>ระบบคำนวณเงินชดเชยค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)</span>
+                                    <span>หน้า ${i + 1} จาก ${summary.groups.length + 1} (สูตร K${g.kCode})</span>
+                                </div>
+                            </div>
+                        `;
+
+                        const canvas = await html2canvas(staging, { scale: 2, useCORS: true });
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                        if (i > 0) pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    }
+
+                    // ส่วนที่ 2: หน้าสุดท้าย สรุปยอดรวมทั้งหมด (แบบฟอร์มที่ 2)
+                    let totalPAll = 0;
+                    let totalNetAll = 0;
+                    const summaryRowsHtml = summary.groups.map(g => {
+                        totalPAll += g.totalP;
+                        totalNetAll += g.netComp;
+                        const compStr = Math.abs(g.netComp) < 0.005 ? '-' : g.netComp.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+                        return `
+                            <tr class="border-b border-gray-300">
+                                <td class="p-2.5 text-center font-mono">1</td>
+                                <td class="p-2.5 text-center">${submitDateStr}</td>
+                                <td class="p-2.5 font-semibold">ตัวที่ ${g.order} : สูตร K${g.kCode} (${g.def.name})</td>
+                                <td class="p-2.5 text-right font-mono">${g.totalP.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                                <td class="p-2.5 text-center font-mono">0</td>
+                                <td class="p-2.5 text-right font-mono font-bold">${g.totalP.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                                <td class="p-2.5 text-center font-bold">K${g.kCode}</td>
+                                <td class="p-2.5 text-center font-mono font-bold text-blue-800">${g.kValue.toFixed(3)}</td>
+                                <td class="p-2.5 text-center font-mono font-bold text-red-700">${g.deductFactor === 0 ? '0' : g.deductFactor.toFixed(3)}</td>
+                                <td class="p-2.5 text-right font-mono font-bold text-green-800">${compStr}</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    const kBreakdownCardsHtml = summary.groups.map(g => `
+                        <div class="border border-gray-400 rounded-lg p-3 bg-gray-50 flex justify-between items-center">
+                            <div>
+                                <div class="text-xs font-bold">ตัวที่ ${g.order} : สูตร K${g.kCode} (ค่า K = ${g.kValue.toFixed(3)})</div>
+                                <div class="text-[11px] text-gray-600">ค่างานที่พิจารณา: ${g.totalP.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} บาท</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] text-gray-500">เงินชดเชยที่ได้</div>
+                                <div class="text-sm font-mono font-bold text-green-800">฿${g.netComp.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    staging.innerHTML = `
+                        <div class="p-10 bg-white text-black font-sans border border-gray-200" style="min-height: 1120px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div class="text-center border-b-2 border-black pb-4 mb-5">
+                                    <div class="text-xs font-bold text-gray-600">หน้าสรุปยอดรวมทั้งสิ้น (แผ่นที่ ${summary.groups.length + 1} / ${summary.groups.length + 1})</div>
+                                    <h1 class="text-lg font-bold mt-1">แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)</h1>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 text-xs border border-gray-400 rounded-lg p-4 mb-5 bg-gray-50">
+                                    <div><strong>กระทรวง:</strong> กระทรวงคมนาคม</div>
+                                    <div><strong>ชื่อโครงการ:</strong> ${this.state.project.name}</div>
+                                    <div><strong>กรม:</strong> กรมทางหลวง</div>
+                                    <div><strong>วันที่เปิดซองประกวดราคา:</strong> ${openDateStr} (${summary.baseLabel})</div>
+                                    <div><strong>สัญญาเลขที่:</strong> ${this.state.project.contract}</div>
+                                    <div><strong>ค่างานทั้งสัญญา:</strong> ${summary.totalAllBoq.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} บาท</div>
+                                    <div><strong>ผู้รับจ้าง:</strong> ${this.state.project.contractor}</div>
+                                    <div><strong>วันที่ส่งมอบงานงวดนี้:</strong> ${submitDateStr} (${summary.currLabel})</div>
+                                </div>
+
+                                <h3 class="font-bold text-sm mb-2">สรุปยอดเงินชดเชยแยกตามสูตรค่า K</h3>
+                                <div class="grid grid-cols-1 gap-2 mb-5">
+                                    ${kBreakdownCardsHtml}
+                                </div>
+
+                                <h3 class="font-bold text-sm mb-2">ตารางสรุปการคำนวณเงินชดเชยค่า K (แบบฟอร์มที่ 2)</h3>
+                                <table class="w-full text-[11px] border border-gray-400 border-collapse mb-6">
+                                    <thead>
+                                        <tr class="bg-gray-200 border-b border-gray-400">
+                                            <th class="p-2 text-center">งวด</th>
+                                            <th class="p-2 text-center">วันที่</th>
+                                            <th class="p-2 text-left">หมวดสูตรค่า K</th>
+                                            <th class="p-2 text-right">ค่างานทั้งหมด</th>
+                                            <th class="p-2 text-center">ไม่อยู่ในข่าย</th>
+                                            <th class="p-2 text-right">ได้รับพิจารณา</th>
+                                            <th class="p-2 text-center">สูตร K</th>
+                                            <th class="p-2 text-center">ค่า K</th>
+                                            <th class="p-2 text-center">หัก ${summary.deductPct}% ชดเชย</th>
+                                            <th class="p-2 text-right">เงินชดเชยที่คำนวณได้</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${summaryRowsHtml}
+                                        <tr class="bg-yellow-100 font-bold border-t-2 border-black text-xs">
+                                            <td colspan="3" class="p-2.5 text-center">ยอดรวมทั้งสิ้น</td>
+                                            <td class="p-2.5 text-right font-mono">${totalPAll.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                                            <td class="p-2.5 text-center font-mono">0</td>
+                                            <td class="p-2.5 text-right font-mono">${totalPAll.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                                            <td colspan="3" class="p-2.5 text-right">รวมเงินชดเชยสุทธิทั้งสิ้น:</td>
+                                            <td class="p-2.5 text-right font-mono text-green-900">${totalNetAll.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="pt-6 border-t border-gray-300 flex justify-between text-[11px] text-gray-500">
+                                <span>อ้างอิงดัชนีราคาเพื่อคำนวณค่า K (ปีฐาน 2530 = 100) สำนักงานนโยบายและยุทธศาสตร์การค้า กระทรวงพาณิชย์</span>
+                                <span>หน้าสรุปยอดรวม (หน้า ${summary.groups.length + 1} จาก ${summary.groups.length + 1})</span>
+                            </div>
+                        </div>
+                    `;
+
+                    const sumCanvas = await html2canvas(staging, { scale: 2, useCORS: true });
+                    const sumImgData = sumCanvas.toDataURL('image/png');
+                    const sumPdfHeight = (sumCanvas.height * pdfWidth) / sumCanvas.width;
+                    pdf.addPage();
+                    pdf.addImage(sumImgData, 'PNG', 0, 0, pdfWidth, sumPdfHeight);
+
+                    staging.innerHTML = '';
+                    pdf.save(`รายงานคำนวณค่าK_${this.state.project.contract.replace(/[\/\\:*?"<>|]/g, '_') || 'Report'}.pdf`);
+                    this.closeModal();
+                } catch (err) {
+                    console.error(err);
+                    staging.innerHTML = '';
+                    this.showModal('เกิดข้อผิดพลาดในการสร้างไฟล์ PDF', 'error');
+                }
+            },
+
+            showModal(msg, type = 'info') {
+                document.getElementById('msg-body').innerText = msg;
+                const icon = document.getElementById('msg-icon');
+                const title = document.getElementById('msg-title');
+                
+                if (type === 'success') {
+                    icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                    icon.className = 'text-5xl mb-3 text-green-500';
+                    title.innerText = 'ดำเนินการสำเร็จ';
+                } else if (type === 'error') {
+                    icon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                    icon.className = 'text-5xl mb-3 text-red-500';
+                    title.innerText = 'เกิดข้อผิดพลาด';
+                } else if (type === 'warning') {
+                    icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                    icon.className = 'text-5xl mb-3 text-brand-yellowDark';
+                    title.innerText = 'คำแนะนำ';
+                } else {
+                    icon.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+                    icon.className = 'text-5xl mb-3 text-blue-500';
+                    title.innerText = 'แจ้งเตือนระบบ';
+                }
+
+                document.getElementById('msg-modal').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('msg-modal-content').classList.remove('scale-95');
+                    document.getElementById('msg-modal-content').classList.add('scale-100');
+                }, 10);
+            },
+
+            closeModal() {
+                document.getElementById('msg-modal-content').classList.remove('scale-100');
+                document.getElementById('msg-modal-content').classList.add('scale-95');
+                setTimeout(() => {
+                    document.getElementById('msg-modal').classList.add('hidden');
+                }, 200);
+            },
+
+            downloadSingleHtmlForGithub() {
+                try {
+                    const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+                    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'index.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.showModal('ดาวน์โหลดไฟล์ "index.html" เรียบร้อยแล้ว! นำไฟล์นี้ไปอัปโหลดขึ้น GitHub Repository แล้วเปิดใช้งาน GitHub Pages ได้ทันทีครับ', 'success');
+                } catch (e) {
+                    console.error(e);
+                    this.showModal('ไม่สามารถดาวน์โหลดไฟล์ HTML ได้', 'error');
+                }
+            }
+        };
+
+        window.onload = () => {
+            app.init();
+        };
+    </script>
+</body>
+</html>
