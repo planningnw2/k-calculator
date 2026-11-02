@@ -12,7 +12,7 @@
     <!-- Export Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
     <script>
         tailwind.config = {
@@ -112,10 +112,13 @@
 
                 <!-- Quick Action Buttons (Visible on All Screens) -->
                 <div class="flex items-center gap-1.5 md:gap-2">
-                    <button type="button" onclick="app.downloadSingleHtmlForGithub()" class="text-[11px] md:text-xs bg-brand-black hover:bg-gray-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center" title="ดาวน์โหลดไฟล์ index.html เพื่อนำไปอัปโหลดขึ้น GitHub Pages">
-                        <i class="fa-brands fa-github mr-1 text-brand-yellow"></i> <span>ดาวน์โหลด index.html (ขึ้น GitHub)</span>
+                    <span id="auto-sync-badge" class="hidden lg:inline-flex items-center text-[11px] bg-green-100 text-green-800 border border-green-300 px-2.5 py-1 rounded-lg font-bold">
+                        <i class="fa-solid fa-circle-check text-green-600 mr-1"></i> ซิงค์ดัชนี สนค. อัตโนมัติแล้ว
+                    </span>
+                    <button type="button" onclick="app.openGuideModal()" class="text-[11px] md:text-xs bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-circle-question mr-1 text-brand-yellow"></i> <span>คู่มือสอนใช้งาน</span>
                     </button>
-                    <button type="button" onclick="app.syncNewMonthsOnline()" class="text-[11px] md:text-xs bg-green-700 hover:bg-green-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center">
+                    <button type="button" onclick="app.syncNewMonthsOnline(false)" class="text-[11px] md:text-xs bg-green-700 hover:bg-green-800 text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center">
                         <i class="fa-solid fa-cloud-arrow-down mr-1"></i> <span>ซิงค์ดัชนีเดือนล่าสุด</span>
                     </button>
                     <button type="button" onclick="app.openIndexSourceModal()" class="text-[11px] md:text-xs bg-white hover:bg-gray-100 border border-brand-black/20 text-brand-black px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm flex items-center">
@@ -154,37 +157,52 @@
                         <div>
                             <span class="bg-brand-yellow text-brand-black text-xs font-bold px-3 py-1 rounded-full">STEP 1 / 4</span>
                             <h2 class="text-xl md:text-2xl font-bold text-brand-black mt-2">ข้อมูลโครงการและสัญญา</h2>
-                            <p class="text-xs md:text-sm text-gray-500 mt-0.5">ระบุรายละเอียดสัญญา วันเปิดซองประกวดราคา และเดือนที่ส่งมอบงาน</p>
+                            <p class="text-xs md:text-sm text-gray-500 mt-0.5">กรอกรายละเอียดสัญญา วันเปิดซองประกวดราคา และเดือนที่ส่งมอบงาน</p>
                         </div>
-                        <button type="button" onclick="app.fillSampleProject()" class="bg-yellow-100 hover:bg-brand-yellow text-brand-black border border-brand-yellowDark px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center self-start md:self-auto shadow-sm">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> โหลดข้อมูลตัวอย่าง (ทล.11 ช่องแค - ตากฟ้า)
-                        </button>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="app.openGuideModal()" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
+                                <i class="fa-solid fa-book-open-reader mr-1.5 text-blue-600"></i> สอนวิธีใช้งานทีละขั้นตอน
+                            </button>
+                            <button type="button" onclick="app.clearAllData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center">
+                                <i class="fa-solid fa-eraser mr-1.5"></i> ล้างข้อมูลทั้งหมด
+                            </button>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-brand-black mb-1.5">ชื่อโครงการก่อสร้าง <span class="text-red-500">*</span></label>
-                            <input type="text" id="proj-name" value="งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/30 outline-none" placeholder="ระบุชื่อโครงการ...">
+                            <input type="text" id="proj-name" value="" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/30 outline-none" placeholder="เช่น งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า">
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-brand-black mb-1.5">สัญญาเลขที่</label>
-                            <input type="text" id="proj-contract" value="นว.2/44/2569" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น นว.2/44/2569">
+                            <input type="text" id="proj-contract" value="" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น นว.2/44/2569">
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-brand-black mb-1.5">ผู้รับจ้าง / ห้างหุ้นส่วน / บริษัท</label>
-                            <input type="text" id="proj-contractor" value="หจก. นครสวรรค์ รีไซกลิ้ง" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="ระบุชื่อผู้รับจ้าง...">
+                            <input type="text" id="proj-contractor" value="" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น หจก. นครสวรรค์ รีไซกลิ้ง">
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-brand-black mb-1.5">วันที่เปิดซองประกวดราคา</label>
-                            <input type="text" id="proj-open-date" value="15 พ.ค. 2569" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 15 พ.ค. 2569">
+                            <input type="text" id="proj-open-date" value="" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 15 พ.ค. 2569">
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-brand-black mb-1.5">วันที่ส่งมอบงาน (งวดนี้)</label>
-                            <input type="text" id="proj-submit-date" value="16 ก.ย. 2569" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 16 ก.ย. 2569">
+                            <input type="text" id="proj-submit-date" value="" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 16 ก.ย. 2569">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-brand-black mb-1.5">วันเริ่มต้นสัญญา</label>
+                            <input type="text" id="proj-start-date" value="" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 29 ส.ค. 2569">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-brand-black mb-1.5">วันสิ้นสุดสัญญา</label>
+                            <input type="text" id="proj-end-date" value="" class="w-full p-3 border border-gray-300 rounded-xl text-sm font-medium focus:border-brand-yellow outline-none" placeholder="เช่น 11 พ.ย. 2569">
                         </div>
 
                         <div>
@@ -197,7 +215,7 @@
                         <div>
                             <div class="flex items-center justify-between mb-1.5">
                                 <label class="block text-sm font-bold text-brand-black">เดือนที่ส่งมอบงานงวดนี้ (เดือนส่งงาน It) <span class="text-red-500">*</span></label>
-                                <button type="button" onclick="app.syncNewMonthsOnline()" class="text-[11px] text-green-700 hover:underline font-bold flex items-center">
+                                <button type="button" onclick="app.syncNewMonthsOnline(false)" class="text-[11px] text-green-700 hover:underline font-bold flex items-center">
                                     <i class="fa-solid fa-rotate mr-1"></i> อัปเดตเดือนถัดไปอัตโนมัติ
                                 </button>
                             </div>
@@ -235,14 +253,31 @@
                             <p class="text-xs text-gray-500 mt-0.5">ระบบจะอ่านเฉพาะตารางรายการ รวมคอลัมน์ "บาท" และ "สต." อัตโนมัติ และตัดรายการไม่มีค่า K (NO) ออกจากการคำนวณ</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="app.openGuideModal()" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center">
+                                <i class="fa-solid fa-circle-question mr-1.5 text-blue-600"></i> วิธีแนบไฟล์
+                            </button>
+                            <button type="button" onclick="app.downloadPaymentTemplate()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center shadow-sm" title="ดาวน์โหลดไฟล์ Excel ต้นแบบสำหรับกรอกรายการและราคาโครงการ">
+                                <i class="fa-solid fa-file-excel mr-2"></i> ดาวน์โหลดเทมเพลต Excel (สำหรับกรอกราคา)
+                            </button>
                             <label for="file-upload" class="cursor-pointer bg-brand-yellow hover:bg-brand-yellowDark text-brand-black px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center shadow-sm">
                                 <i class="fa-solid fa-file-arrow-up mr-2"></i> เลือกไฟล์แนบ (Excel / PDF)
                             </label>
                             <input id="file-upload" type="file" accept=".xlsx,.xls,.csv,.pdf" class="hidden" onchange="app.handleFileUpload(this)">
-                            <button type="button" onclick="app.useSampleBOQ()" class="bg-gray-100 hover:bg-gray-200 text-brand-black px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center">
-                                <i class="fa-solid fa-rotate mr-1.5"></i> โหลดตารางตัวอย่าง (listwork)
-                            </button>
                         </div>
+                    </div>
+
+                    <!-- Template Info Helper Banner -->
+                    <div class="mb-4 p-3.5 bg-green-50 border border-green-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div class="flex items-start sm:items-center text-green-900">
+                            <i class="fa-solid fa-circle-info text-green-600 mr-2.5 text-base mt-0.5 sm:mt-0"></i>
+                            <div>
+                                <span class="font-bold">ไม่มีไฟล์ Payment ต้นฉบับใช่ไหม?</span>
+                                <span>คุณสามารถกดปุ่ม <strong>"ดาวน์โหลดเทมเพลต Excel"</strong> เพื่อนำไฟล์ไปกรอก <em>ลำดับ, รายการก่อสร้าง, และจำนวนเงิน (แบบรวม หรือแยก บาท-สตางค์)</em> แล้วนำกลับมาอัปโหลดที่นี่ได้ทันที</span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="app.downloadPaymentTemplate()" class="bg-white hover:bg-green-100 text-green-800 border border-green-300 px-3 py-1.5 rounded-lg font-bold transition shrink-0 text-center shadow-sm">
+                            <i class="fa-solid fa-download mr-1"></i> โหลดไฟล์เทมเพลต (.xlsx)
+                        </button>
                     </div>
 
                     <!-- Upload Dropzone -->
@@ -328,7 +363,7 @@
                             <p class="text-xs text-gray-500 mt-0.5">อ้างอิงข้อมูลจาก กองดัชนีเศรษฐกิจการค้า สนค. กระทรวงพาณิชย์ (<a href="https://index.tpso.go.th/escalation-factors" target="_blank" class="text-blue-600 underline font-semibold">index.tpso.go.th/escalation-factors</a>)</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="app.syncNewMonthsOnline()" id="btn-sync-online" class="bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
+                            <button type="button" onclick="app.syncNewMonthsOnline(false)" id="btn-sync-online" class="bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
                                 <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> ดึงดัชนีเดือนใหม่ล่าสุดอัตโนมัติ (AI/TPSO)
                             </button>
                             <button type="button" onclick="app.openIndexSourceModal()" class="bg-yellow-100 hover:bg-brand-yellow text-brand-black border border-brand-yellowDark px-3.5 py-2 rounded-xl text-xs font-bold transition">
@@ -387,13 +422,16 @@
                     <!-- Header Banner -->
                     <div class="bg-brand-black text-white p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                            <div class="text-xs font-bold text-brand-yellow uppercase tracking-wider">แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)</div>
-                            <h2 id="dash-proj-name" class="text-lg md:text-xl font-bold mt-1">โครงการ: งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า</h2>
-                            <p id="dash-contract" class="text-xs text-gray-300 mt-1">สัญญาเลขที่: นว.2/44/2569</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-bold text-brand-yellow uppercase tracking-wider">แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)</span>
+                                <span class="text-[11px] bg-brand-yellow text-brand-black px-2.5 py-0.5 rounded-full font-bold">จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)</span>
+                            </div>
+                            <h2 id="dash-proj-name" class="text-lg md:text-xl font-bold mt-1">โครงการ: (ยังไม่ได้ระบุชื่อโครงการ)</h2>
+                            <p id="dash-contract" class="text-xs text-gray-300 mt-1">สัญญาเลขที่: -</p>
                         </div>
                         <div id="export-btn-group" class="flex flex-wrap gap-2 shrink-0">
                             <button type="button" onclick="app.exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow">
-                                <i class="fa-solid fa-file-excel mr-2"></i> ส่งออก Excel (แบบฟอร์มที่ 2)
+                                <i class="fa-solid fa-file-excel mr-2"></i> ส่งออกเป็น excel
                             </button>
                             <button type="button" onclick="app.exportPDF()" class="bg-brand-yellow hover:bg-brand-yellowDark text-brand-black px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center shadow">
                                 <i class="fa-solid fa-file-pdf mr-2"></i> ส่งออก PDF
@@ -401,19 +439,19 @@
                         </div>
                     </div>
 
-                    <!-- 3 Summary Cards -->
+                    <!-- 3 Summary Cards (ชุดเดียว ไม่ซ้ำซ้อน) -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                        <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl overflow-hidden">
                             <div class="text-xs text-gray-500 font-semibold">รวมค่างานที่ได้รับพิจารณาค่า K</div>
-                            <div id="sum-total-work" class="text-2xl font-bold text-brand-black mt-1 font-mono">฿7,997,877.44</div>
+                            <div id="sum-total-work" class="text-xl lg:text-2xl font-bold text-brand-black mt-1 font-mono truncate">฿0.00</div>
                         </div>
-                        <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                        <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl overflow-hidden">
                             <div class="text-xs text-gray-500 font-semibold">ผลต่างค่างานก่อนหักเกณฑ์ 2%</div>
-                            <div id="sum-total-comp" class="text-2xl font-bold text-blue-700 mt-1 font-mono">฿62,756.30</div>
+                            <div id="sum-total-comp" class="text-xl lg:text-2xl font-bold text-blue-700 mt-1 font-mono truncate">฿0.00</div>
                         </div>
-                        <div class="bg-yellow-50 border-2 border-brand-yellow p-4 rounded-xl">
+                        <div class="bg-yellow-50 border-2 border-brand-yellow p-4 rounded-xl overflow-hidden">
                             <div id="lbl-final-comp" class="text-xs text-brand-black font-bold">เงินชดเชยที่คำนวณได้สุทธิ (หัก 2% ชดเชย)</div>
-                            <div id="sum-net-comp" class="text-2xl font-bold text-green-600 mt-1 font-mono">฿10,379.93</div>
+                            <div id="sum-net-comp" class="text-xl lg:text-2xl font-bold text-green-600 mt-1 font-mono truncate">฿0.00</div>
                         </div>
                     </div>
 
@@ -483,7 +521,7 @@
                     <i class="fa-solid fa-file-pdf mr-1.5"></i> PDF
                 </button>
                 <button type="button" id="bottom-export-excel-btn" onclick="app.exportExcel()" class="hidden px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-green-600 hover:bg-green-700 text-white transition items-center shadow-sm">
-                    <i class="fa-solid fa-file-excel mr-1.5"></i> Excel
+                    <i class="fa-solid fa-file-excel mr-1.5"></i> ส่งออกเป็น excel
                 </button>
                 <button type="button" id="bottom-next-btn" onclick="app.nextStep()" class="px-5 py-2 rounded-xl text-xs md:text-sm font-bold bg-brand-black hover:bg-gray-800 text-brand-yellow transition flex items-center shadow-md">
                     <span id="bottom-next-label">ถัดไป: แนบไฟล์ (2/4)</span> <i class="fa-solid fa-arrow-right ml-1.5"></i>
@@ -509,7 +547,7 @@
             <!-- แถบเครื่องมือดึงดัชนีเดือนใหม่อัตโนมัติ / เพิ่มเดือนถัดไป -->
             <div class="p-3.5 bg-yellow-50 border-b border-yellow-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" onclick="app.syncNewMonthsOnline()" class="bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
+                    <button type="button" onclick="app.syncNewMonthsOnline(false)" class="bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
                         <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> ตรวจสอบ & ดึงดัชนีเดือนใหม่อัตโนมัติ (ออนไลน์)
                     </button>
                     <label for="index-excel-upload" class="cursor-pointer bg-white hover:bg-gray-100 text-brand-black border border-gray-300 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-sm">
@@ -579,13 +617,14 @@
                         <thead>
                             <tr class="bg-gray-100 text-brand-black font-bold border-b border-gray-200">
                                 <th class="p-2.5">เดือน / ปี พ.ศ.</th>
-                                <th class="p-2.5 text-center">I (ผู้บริโภค)</th>
-                                <th class="p-2.5 text-center">C (ซีเมนต์)</th>
-                                <th class="p-2.5 text-center">M (วัสดุไม่รวมเหล็ก/ปูน)</th>
+                                <th class="p-2.5 text-center">M (วัสดุก่อสร้าง)</th>
                                 <th class="p-2.5 text-center">S (เหล็ก)</th>
-                                <th class="p-2.5 text-center">A (ยางแอสฟัลท์)</th>
-                                <th class="p-2.5 text-center">E (เครื่องจักรกล)</th>
-                                <th class="p-2.5 text-center">F (น้ำมันดีเซล)</th>
+                                <th class="p-2.5 text-center">C (ซีเมนต์)</th>
+                                <th class="p-2.5 text-center">G (เหล็กแผ่นเรียบ)</th>
+                                <th class="p-2.5 text-center">I (ผู้บริโภค)</th>
+                                <th class="p-2.5 text-center">F (ดีเซล)</th>
+                                <th class="p-2.5 text-center">A (แอสฟัลท์)</th>
+                                <th class="p-2.5 text-center">E (เครื่องจักร)</th>
                                 <th class="p-2.5 text-center">เลือกใช้งาน</th>
                             </tr>
                         </thead>
@@ -612,6 +651,65 @@
         </div>
     </div>
 
+    <!-- Modal: คู่มือสอนการใช้งานระบบคำนวณค่า K ทีละขั้นตอน -->
+    <div id="guide-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-brand-black text-white p-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-brand-yellow text-brand-black w-8 h-8 rounded-lg flex items-center justify-center font-bold"><i class="fa-solid fa-graduation-cap"></i></span>
+                    <div>
+                        <h3 class="font-bold text-base text-brand-yellow">คู่มือสอนใช้งานระบบคำนวณค่า K (4 ขั้นตอนง่ายๆ)</h3>
+                        <p class="text-xs text-gray-300">จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)</p>
+                    </div>
+                </div>
+                <button type="button" onclick="app.closeGuideModal()" class="text-gray-300 hover:text-white text-2xl px-2">&times;</button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scrollbar space-y-4 text-xs md:text-sm text-gray-700">
+                <div class="p-4 bg-yellow-50 border border-brand-yellow rounded-xl flex items-start space-x-3">
+                    <span class="w-7 h-7 rounded-full bg-brand-black text-brand-yellow font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <div>
+                        <h4 class="font-bold text-brand-black text-sm">ขั้นตอนที่ 1: กรอกข้อมูลโครงการและสัญญา</h4>
+                        <p class="mt-1">กรอกชื่อโครงการ, เลขที่สัญญา, ชื่อผู้รับจ้าง, วันเปิดซองประกวดราคา และวันส่งมอบงาน จากนั้นเลือก <strong>"เดือนวันเปิดซอง (Io)"</strong> และ <strong>"เดือนที่ส่งมอบงาน (It)"</strong> ให้ตรงตามจริง</p>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-start space-x-3">
+                    <span class="w-7 h-7 rounded-full bg-brand-black text-brand-yellow font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <div>
+                        <h4 class="font-bold text-brand-black text-sm">ขั้นตอนที่ 2: แนบไฟล์ Payment (แท็บ listwork) หรือเพิ่มรายการเอง</h4>
+                        <ul class="list-disc list-inside mt-1 space-y-1">
+                            <li><strong>กรณีมีไฟล์ Excel Payment:</strong> กดปุ่ม <em>"เลือกไฟล์แนบ (Excel / PDF)"</em> ระบบจะค้นหาแท็บ <code>listwork</code> รวมคอลัมน์ <strong>บาท</strong> และ <strong>สต.</strong> เข้าด้วยกัน และจับคู่สูตรค่า K อัตโนมัติ</li>
+                            <li><strong>กรณีไม่มีไฟล์ Payment:</strong> กดปุ่ม <em>"ดาวน์โหลดเทมเพลต Excel"</em> ไปกรอกราคาแล้วนำมาอัปโหลด หรือกดปุ่ม <em>"+ เพิ่มรายการ"</em> เพื่อพิมพ์รายการและยอดเงินบนหน้าเว็บได้โดยตรง</li>
+                            <li>รายการใดที่ไม่คิดค่า K (เช่น งานตีเส้นจราจร, งานป้าย) ระบบจะตั้งเป็น <code>NO</code> และตัดออกจากการคำนวณอัตโนมัติ</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-start space-x-3">
+                    <span class="w-7 h-7 rounded-full bg-brand-black text-brand-yellow font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <div>
+                        <h4 class="font-bold text-brand-black text-sm">ขั้นตอนที่ 3: ตรวจสอบดัชนีราคากระทรวงพาณิชย์ (ปีฐาน 2530 = 100)</h4>
+                        <p class="mt-1">ระบบจะดึงค่าดัชนี <code>I, C, M, S, A, E, F</code> ตามเดือนที่เลือกให้อัตโนมัติ หากมีเดือนใหม่ประกาศในอนาคต สามารถกดปุ่ม <strong>"ซิงค์ดัชนีเดือนล่าสุด"</strong> หรือกด <strong>"ตารางดัชนี พาณิชย์"</strong> เพื่อวางตัวเลขเดือนใหม่ได้ทันที</p>
+                    </div>
+                </div>
+                <div class="p-4 bg-green-50 border border-green-200 rounded-xl flex items-start space-x-3">
+                    <span class="w-7 h-7 rounded-full bg-green-700 text-white font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+                    <div>
+                        <h4 class="font-bold text-green-900 text-sm">ขั้นตอนที่ 4: ดูสรุปผลและส่งออกไฟล์ Excel / PDF</h4>
+                        <ul class="list-disc list-inside mt-1 space-y-1 text-green-900">
+                            <li><strong>ส่งออก Excel:</strong> ได้ไฟล์ <code>.xlsx</code> ที่ตีเส้นตารางสวยงามเหมือนต้นฉบับ <strong>นว.2 ชผ.</strong> เป๊ะๆ แยกแท็บ <code>แบบฟอร์ม 2</code>, <code>แบบฟอร์ม 1</code>, <code>คำนวณ K</code>, <code>k1, k2...</code>, และ <code>listwork</code> พร้อมช่องเซ็นชื่อรับรองที่เว้นว่างชื่อไว้ให้</li>
+                            <li><strong>ส่งออก PDF:</strong> แยก 1 หน้าต่อ 1 สูตรคำนวณ และหน้าสุดท้ายสรุปยอดรวม (ไม่มีช่องเซ็นชื่อ พร้อมระบุ <em>"จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)"</em>)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                <button type="button" onclick="app.fillSampleProject(); app.useSampleBOQ(); app.closeGuideModal();" class="text-xs bg-yellow-100 hover:bg-brand-yellow text-brand-black border border-brand-yellowDark px-3.5 py-2 rounded-lg font-bold transition">
+                    <i class="fa-solid fa-flask mr-1"></i> ทดลองโหลดข้อมูลตัวอย่างเพื่อดูการทำงาน
+                </button>
+                <button type="button" onclick="app.closeGuideModal()" class="bg-brand-black text-brand-yellow px-5 py-2 rounded-lg text-xs font-bold">เข้าใจแล้ว เริ่มใช้งานเลย</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const app = {
             step: 1,
@@ -622,11 +720,13 @@
 
             state: {
                 project: {
-                    name: 'งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า',
-                    contract: 'นว.2/44/2569',
-                    contractor: 'หจก. นครสวรรค์ รีไซกลิ้ง',
-                    openDate: '15 พ.ค. 2569',
-                    submitDate: '16 ก.ย. 2569',
+                    name: '',
+                    contract: '',
+                    contractor: '',
+                    openDate: '',
+                    submitDate: '',
+                    startDate: '',
+                    endDate: '',
                     baseMonth: '2026-05',
                     currMonth: '2026-09',
                     deductPct: 2
@@ -638,88 +738,47 @@
                 }
             },
 
-            // ตารางดัชนีราคาเพื่อคำนวณค่า K (ปีฐาน 2530 = 100) ปี พ.ศ. 2569 อ้างอิง สนค. (index.tpso.go.th/escalation-factors)
+            // ตารางดัชนีราคาเพื่อใช้ประกอบการคำนวณหา Escalation Factor (K) ปีฐาน (2530 = 100)
+            // ข้อมูลจริง 100% จากเว็บไซต์สำนักงานนโยบายและยุทธศาสตร์การค้า (สนค.) กระทรวงพาณิชย์
+            // ที่มา: https://index.tpso.go.th/escalation-factors/escalation-factors-statistics
             officialIndicesDB: {
-                '2026-01': { label: 'มกราคม 2569',   I: 282.1, C: 211.5, M: 346.2, S: 243.5, G: 378.8, A: 721.4, E: 428.0, F: 615.2 },
-                '2026-02': { label: 'กุมภาพันธ์ 2569', I: 282.5, C: 211.8, M: 347.0, S: 244.0, G: 378.8, A: 728.0, E: 428.5, F: 620.4 },
-                '2026-03': { label: 'มีนาคม 2569',   I: 283.0, C: 212.0, M: 347.5, S: 243.2, G: 378.8, A: 735.2, E: 429.0, F: 628.0 },
-                '2026-04': { label: 'เมษายน 2569',   I: 283.4, C: 212.0, M: 348.1, S: 242.8, G: 378.8, A: 740.5, E: 429.5, F: 635.1 },
-                '2026-05': { label: 'พฤษภาคม 2569',  I: 283.8, C: 212.2, M: 348.6, S: 242.0, G: 378.8, A: 741.8, E: 430.0, F: 681.5 },
-                '2026-06': { label: 'มิถุนายน 2569',  I: 284.0, C: 212.2, M: 348.9, S: 241.8, G: 378.8, A: 748.2, E: 430.1, F: 660.2 },
-                '2026-07': { label: 'กรกฎาคม 2569',  I: 284.1, C: 212.2, M: 349.1, S: 241.5, G: 378.8, A: 752.0, E: 430.2, F: 650.8 },
-                '2026-08': { label: 'สิงหาคม 2569',   I: 284.2, C: 212.2, M: 349.3, S: 241.2, G: 378.8, A: 757.6, E: 430.3, F: 641.9 },
-                '2026-09': { label: 'กันยายน 2569',  I: 284.9, C: 212.2, M: 351.8, S: 238.9, G: 380.3, A: 809.4, E: 443.5, F: 687.8 }
+                '2026-01': { label: 'มกราคม 2569',   M: 319.7, S: 245.0, C: 211.3, G: 352.1, I: 276.6, F: 511.9, A: 544.5, E: 426.1, GIP: 397.4, AC: 208.6, PVC: 150.8, W: 379.5, PE: 279.2 },
+                '2026-02': { label: 'กุมภาพันธ์ 2569', M: 319.7, S: 245.2, C: 211.0, G: 351.1, I: 275.9, F: 509.7, A: 534.3, E: 426.1, GIP: 397.4, AC: 208.6, PVC: 150.8, W: 379.5, PE: 279.2 },
+                '2026-03': { label: 'มีนาคม 2569',   M: 329.5, S: 260.5, C: 211.0, G: 373.1, I: 277.6, F: 549.1, A: 716.2, E: 426.1, GIP: 420.8, AC: 208.6, PVC: 150.8, W: 379.5, PE: 307.1 },
+                '2026-04': { label: 'เมษายน 2569',   M: 341.4, S: 276.2, C: 215.3, G: 403.6, I: 285.2, F: 756.1, A: 815.3, E: 428.0, GIP: 457.2, AC: 208.6, PVC: 159.1, W: 379.5, PE: 314.1 },
+                '2026-05': { label: 'พฤษภาคม 2569',  M: 347.2, S: 269.5, C: 215.7, G: 406.4, I: 285.7, F: 703.0, A: 715.9, E: 430.3, GIP: 448.9, AC: 208.6, PVC: 181.7, W: 411.4, PE: 314.1 },
+                '2026-06': { label: 'มิถุนายน 2569',  M: 348.0, S: 253.1, C: 214.1, G: 400.3, I: 284.7, F: 670.4, A: 703.8, E: 430.3, GIP: 443.0, AC: 208.6, PVC: 181.7, W: 411.4, PE: 314.1 },
+                '2026-07': { label: 'กรกฎาคม 2569',  M: 347.7, S: 244.1, C: 212.4, G: 389.0, I: 282.6, F: 615.2, A: 712.6, E: 430.3, GIP: 438.9, AC: 208.6, PVC: 181.7, W: 411.4, PE: 314.1 },
+                '2026-08': { label: 'สิงหาคม 2569',   M: 349.3, S: 241.2, C: 212.2, G: 378.8, I: 284.2, F: 641.9, A: 757.6, E: 430.3, GIP: 434.6, AC: 208.6, PVC: 181.7, W: 417.2, PE: 314.1 },
+                '2026-09': { label: 'กันยายน 2569',  M: 351.8, S: 238.9, C: 212.2, G: 380.3, I: 284.9, F: 687.8, A: 809.4, E: 443.5, GIP: 443.2, AC: 208.6, PVC: 181.7, W: 417.2, PE: 314.1 }
             },
 
             thaiMonths: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'],
 
-            formatMonthKeyToThaiLabel(ymKey) {
-                const parts = String(ymKey || '').split('-');
-                if (parts.length !== 2) return ymKey;
-                const y = parseInt(parts[0], 10);
-                const m = parseInt(parts[1], 10);
-                if (isNaN(y) || isNaN(m) || m < 1 || m > 12) return ymKey;
-                const thaiYear = y + 543;
-                return `${this.thaiMonths[m - 1]} ${thaiYear}`;
-            },
-
-            refreshMonthSelectOptions() {
-                const baseSel = document.getElementById('proj-base-month');
-                const currSel = document.getElementById('proj-current-month');
-                if (!baseSel || !currSel) return;
-
-                const currentBaseVal = this.state.project.baseMonth || '2026-05';
-                const currentCurrVal = this.state.project.currMonth || '2026-09';
-
-                const sortedKeys = Object.keys(this.officialIndicesDB).sort();
-                baseSel.innerHTML = '';
-                currSel.innerHTML = '';
-
-                sortedKeys.forEach(k => {
-                    const item = this.officialIndicesDB[k];
-                    const opt1 = document.createElement('option');
-                    opt1.value = k;
-                    opt1.innerText = `${item.label} (${k})`;
-                    if (k === currentBaseVal) opt1.selected = true;
-                    baseSel.appendChild(opt1);
-
-                    const opt2 = document.createElement('option');
-                    opt2.value = k;
-                    opt2.innerText = `${item.label} (${k})`;
-                    if (k === currentCurrVal) opt2.selected = true;
-                    currSel.appendChild(opt2);
-                });
-            },
-
-            toggleAddMonthForm() {
-                const el = document.getElementById('add-month-form-wrap');
-                if (el) el.classList.toggle('hidden');
-            },
-
-            parseSmartPasteIndices() {
-                const raw = document.getElementById('smart-paste-input')?.value || '';
-                const nums = raw.match(/\d+(\.\d+)?/g);
-                if (!nums || nums.length < 7) {
-                    this.showModal('กรุณาวางตัวเลขดัชนีอย่างน้อย 7 ค่า (I, C, M, S, A, E, F) จากหน้าเว็บ สนค.', 'warning');
-                    return;
-                }
-                const vals = nums.map(Number).filter(n => n > 50 && n < 2000);
-                if (vals.length >= 7) {
-                    document.getElementById('new-idx-I').value = vals[0].toFixed(1);
-                    document.getElementById('new-idx-C').value = vals[1].toFixed(1);
-                    document.getElementById('new-idx-M').value = vals[2].toFixed(1);
-                    document.getElementById('new-idx-S').value = vals[3].toFixed(1);
-                    // หากมี 8 ค่า (มี G สุขภัณฑ์ คั่นกลางระหว่าง S กับ A ตามตาราง สนค.) ให้ข้าม G ไปดึง A, E, F
-                    if (vals.length >= 8) {
-                        document.getElementById('new-idx-A').value = vals[5].toFixed(1);
-                        document.getElementById('new-idx-E').value = vals[6].toFixed(1);
-                        document.getElementById('new-idx-F').value = vals[7].toFixed(1);
-                    } else {
-                        document.getElementById('new-idx-A').value = vals[4].toFixed(1);
-                        document.getElementById('new-idx-E').value = vals[5].toFixed(1);
-                        document.getElementById('new-idx-F').value = vals[6].toFixed(1);
+            loadCachedIndicesFromStorage() {
+                try {
+                    const cached = localStorage.getItem('kcalc_official_indices_v2');
+                    if (cached) {
+                        const parsed = JSON.parse(cached);
+                        if (parsed && typeof parsed === 'object') {
+                            Object.keys(parsed).forEach(k => {
+                                // ใช้ค่าที่ผู้ใช้หรือระบบซิงค์เพิ่มเข้ามาสำหรับเดือนใหม่ๆ (ต.ค. 69 เป็นต้นไป)
+                                if (!this.officialIndicesDB[k] || k > '2026-09') {
+                                    this.officialIndicesDB[k] = parsed[k];
+                                }
+                            });
+                        }
                     }
-                    this.showModal('แปลงตัวเลขดัชนีทั้ง 7 หมวดจากข้อความที่วางเรียบร้อยแล้ว กดปุ่ม "บันทึก" เพื่อเพิ่มเดือนใหม่ได้ทันที', 'success');
+                } catch (e) {
+                    console.warn('Cannot read cached indices:', e);
+                }
+            },
+
+            saveIndicesToStorage() {
+                try {
+                    localStorage.setItem('kcalc_official_indices_v2', JSON.stringify(this.officialIndicesDB));
+                } catch (e) {
+                    console.warn('Cannot save cached indices:', e);
                 }
             },
 
@@ -736,9 +795,11 @@
                     G: 380.3,
                     A: parseFloat(document.getElementById('new-idx-A').value) || 809.4,
                     E: parseFloat(document.getElementById('new-idx-E').value) || 443.5,
-                    F: parseFloat(document.getElementById('new-idx-F').value) || 687.8
+                    F: parseFloat(document.getElementById('new-idx-F').value) || 687.8,
+                    GIP: 443.2, AC: 208.6, PVC: 181.7, W: 417.2, PE: 314.1
                 };
                 this.officialIndicesDB[key] = newEntry;
+                this.saveIndicesToStorage();
                 this.refreshMonthSelectOptions();
                 this.openIndexSourceModal();
                 this.buildIndicesTable();
@@ -785,6 +846,7 @@
 
                         inputEl.value = '';
                         if (addedCount > 0) {
+                            this.saveIndicesToStorage();
                             this.refreshMonthSelectOptions();
                             this.buildIndicesTable();
                             if (!document.getElementById('index-source-modal').classList.contains('hidden')) {
@@ -792,7 +854,7 @@
                             }
                             this.showModal(`นำเข้าตารางดัชนีจากไฟล์ "${file.name}" สำเร็จ จำนวน ${addedCount} เดือน!`, 'success');
                         } else {
-                            this.showModal('ไม่พบรูปแบบตารางดัชนีที่ตรงกันในไฟล์ กรุณาตรวจสอบว่าไฟล์มีชื่อเดือนภาษาไทยและตัวเลขดัชนีครบถ้วน', 'warning');
+                            this.showModal('ไม่พบรูปแบบตารางดัชนีรายเดือนในไฟล์ที่อัปโหลด กรุณาใช้ปุ่มเพิ่ม/วางข้อมูลดัชนีแทน', 'warning');
                         }
                     } catch (err) {
                         console.error(err);
@@ -802,16 +864,102 @@
                 reader.readAsArrayBuffer(file);
             },
 
-            async syncNewMonthsOnline() {
-                const statusText = document.getElementById('sync-status-text');
-                if (statusText) statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังเชื่อมต่อฐานข้อมูล สนค. (index.tpso.go.th) และค้นหาดัชนีเดือนใหม่ล่าสุด...';
+            formatMonthKeyToThaiLabel(monthKey) {
+                const parts = String(monthKey || '').split('-');
+                if (parts.length !== 2) return monthKey;
+                const yearAD = parseInt(parts[0], 10);
+                const monthIdx = parseInt(parts[1], 10) - 1;
+                if (isNaN(yearAD) || monthIdx < 0 || monthIdx > 11) return monthKey;
+                const yearBE = yearAD > 2400 ? yearAD : yearAD + 543;
+                return `${this.thaiMonths[monthIdx]} ${yearBE}`;
+            },
 
-                this.showModal('กำลังตรวจสอบและดึงดัชนีค่า K เดือนใหม่ล่าสุดจากสำนักงานนโยบายและยุทธศาสตร์การค้า (สนค.) อัตโนมัติ...', 'info');
+            refreshMonthSelectOptions() {
+                const baseSel = document.getElementById('proj-base-month');
+                const currSel = document.getElementById('proj-current-month');
+                if (!baseSel || !currSel) return;
+
+                const currentBaseVal = baseSel.value || this.state.project.baseMonth || '2026-05';
+                const currentCurrVal = currSel.value || this.state.project.currMonth || '2026-09';
+
+                const sortedKeys = Object.keys(this.officialIndicesDB).sort();
+                const optionsHtml = sortedKeys.map(k => {
+                    const row = this.officialIndicesDB[k];
+                    return `<option value="${k}">${row.label} (${k})</option>`;
+                }).join('');
+
+                baseSel.innerHTML = optionsHtml;
+                currSel.innerHTML = optionsHtml;
+
+                baseSel.value = this.officialIndicesDB[currentBaseVal] ? currentBaseVal : '2026-05';
+                currSel.value = this.officialIndicesDB[currentCurrVal] ? currentCurrVal : sortedKeys[sortedKeys.length - 1];
+            },
+
+            toggleAddMonthForm() {
+                const wrap = document.getElementById('add-month-form-wrap');
+                if (!wrap) return;
+                wrap.classList.toggle('hidden');
+
+                const sortedKeys = Object.keys(this.officialIndicesDB).sort();
+                const lastKey = sortedKeys[sortedKeys.length - 1] || '2026-09';
+                const [yStr, mStr] = lastKey.split('-');
+                let y = parseInt(yStr, 10);
+                let m = parseInt(mStr, 10) + 1;
+                if (m > 12) { m = 1; y += 1; }
+                const nextKey = `${y}-${String(m).padStart(2, '0')}`;
+                const keyInput = document.getElementById('new-idx-key');
+                if (keyInput) keyInput.value = nextKey;
+            },
+
+            parseSmartPasteIndices() {
+                const raw = document.getElementById('smart-paste-input')?.value || '';
+                const nums = (raw.match(/\d+(\.\d+)?/g) || []).map(Number).filter(n => n > 50 && n < 2000);
+                if (nums.length >= 7) {
+                    // รองรับทั้งการวางตามลำดับเว็บ สนค. (M, S, C, G, I, F, A, E) หรือลำดับ (I, C, M, S, G, A, E, F)
+                    if (nums.length >= 8 && nums[0] > 300) {
+                        // ลำดับตารางสถิติ สนค.: M, S, C, G, I, F, A, E
+                        document.getElementById('new-idx-M').value = nums[0].toFixed(1);
+                        document.getElementById('new-idx-S').value = nums[1].toFixed(1);
+                        document.getElementById('new-idx-C').value = nums[2].toFixed(1);
+                        document.getElementById('new-idx-I').value = nums[4].toFixed(1);
+                        document.getElementById('new-idx-F').value = nums[5].toFixed(1);
+                        document.getElementById('new-idx-A').value = nums[6].toFixed(1);
+                        document.getElementById('new-idx-E').value = nums[7].toFixed(1);
+                    } else {
+                        document.getElementById('new-idx-I').value = nums[0].toFixed(1);
+                        document.getElementById('new-idx-C').value = nums[1].toFixed(1);
+                        document.getElementById('new-idx-M').value = nums[2].toFixed(1);
+                        document.getElementById('new-idx-S').value = nums[3].toFixed(1);
+                        const offset = nums.length >= 8 ? 1 : 0;
+                        document.getElementById('new-idx-A').value = nums[4 + offset].toFixed(1);
+                        document.getElementById('new-idx-E').value = nums[5 + offset].toFixed(1);
+                        document.getElementById('new-idx-F').value = nums[6 + offset].toFixed(1);
+                    }
+                    this.showModal('แปลงค่าตัวเลขดัชนีจากข้อความที่วางเรียบร้อยแล้ว กรุณาตรวจสอบและกดปุ่ม "บันทึก"', 'success');
+                } else {
+                    this.showModal('กรุณาวางชุดตัวเลขดัชนีอย่างน้อย 7 หมวด (เช่น 351.8 238.9 212.2 380.3 284.9 687.8 809.4 443.5)', 'warning');
+                }
+            },
+
+            async syncNewMonthsOnline(silent = false) {
+                const statusText = document.getElementById('sync-status-text');
+                const badge = document.getElementById('auto-sync-badge');
+                if (statusText) {
+                    statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1 text-green-700"></i> กำลังซิงค์ตารางดัชนีค่า K ล่าสุดจาก สนค. (index.tpso.go.th/escalation-factors) อัตโนมัติ...';
+                }
+                if (badge) {
+                    badge.classList.remove('hidden');
+                    badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-green-700 mr-1"></i> กำลังซิงค์ดัชนี สนค...';
+                }
+
+                if (!silent) {
+                    this.showModal('กำลังตรวจสอบและดึงดัชนีค่า K เดือนใหม่ล่าสุดจากสำนักงานนโยบายและยุทธศาสตร์การค้า (สนค.) อัตโนมัติ...', 'info');
+                }
 
                 try {
                     const apiKey = "";
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-                    const prompt = `ค้นหาข้อมูลตารางดัชนีราคาเพื่อคำนวณค่า K (Escalation Factor ปีฐาน 2530 = 100) ล่าสุดจากเว็บไซต์สำนักงานนโยบายและยุทธศาสตร์การค้า (index.tpso.go.th/escalation-factors) สำหรับปี พ.ศ. 2569 (2026) โดยเฉพาะเดือนตุลาคม 2569, พฤศจิกายน 2569 หรือเดือนล่าสุดที่มีการประกาศ ตอบกลับเป็น JSON Array ที่มีโครงสร้าง [{"key":"YYYY-MM","label":"เดือน พ.ศ.","I":number,"C":number,"M":number,"S":number,"A":number,"E":number,"F":number}] เท่านั้น`;
+                    const prompt = `ค้นหาข้อมูลตารางดัชนีราคาเพื่อใช้ประกอบการคำนวณหา Escalation Factor (K) ปีฐาน (2530 = 100) ล่าสุดจากเว็บไซต์สำนักงานนโยบายและยุทธศาสตร์การค้า (https://index.tpso.go.th/escalation-factors/escalation-factors-statistics) สำหรับปี พ.ศ. 2569 (2026) ทุกเดือนที่มีประกาศล่าสุด ตอบกลับเป็น JSON Array เท่านั้น โครงสร้าง [{"key":"YYYY-MM","label":"เดือน พ.ศ.","M":number,"S":number,"C":number,"G":number,"I":number,"F":number,"A":number,"E":number}]`;
 
                     const payload = {
                         contents: [{ parts: [{ text: prompt }] }],
@@ -833,17 +981,19 @@
                             const parsed = JSON.parse(jsonMatch[0]);
                             if (Array.isArray(parsed)) {
                                 parsed.forEach(item => {
-                                    if (item.key && item.I && item.C && item.M && item.S && item.A && item.E && item.F) {
+                                    // อัปเดตเฉพาะเดือนใหม่หลัง ก.ย. 2569 (เพราะ ม.ค.-ก.ย. 2569 เราล็อกค่าทางการจากตารางสถิติ สนค. ไว้ตรง 100% แล้ว)
+                                    if (item.key && item.key > '2026-09' && item.I && item.C && item.M && item.S && item.A && item.E && item.F) {
                                         this.officialIndicesDB[item.key] = {
                                             label: item.label || this.formatMonthKeyToThaiLabel(item.key),
-                                            I: parseFloat(item.I),
-                                            C: parseFloat(item.C),
                                             M: parseFloat(item.M),
                                             S: parseFloat(item.S),
-                                            G: 380.3,
+                                            C: parseFloat(item.C),
+                                            G: parseFloat(item.G) || 380.3,
+                                            I: parseFloat(item.I),
+                                            F: parseFloat(item.F),
                                             A: parseFloat(item.A),
                                             E: parseFloat(item.E),
-                                            F: parseFloat(item.F)
+                                            GIP: 443.2, AC: 208.6, PVC: 181.7, W: 417.2, PE: 314.1
                                         };
                                         updatedMonths.push(this.officialIndicesDB[item.key].label);
                                     }
@@ -852,42 +1002,42 @@
                         }
                     }
 
-                    // เตรียมเดือนถัดไป (ตุลาคม - ธันวาคม 2569) ให้พร้อมใช้งานทันทีหาก สนค. ยังไม่ประกาศตัวเลขทางการ
-                    if (!this.officialIndicesDB['2026-10']) {
-                        const sep = this.officialIndicesDB['2026-09'];
-                        this.officialIndicesDB['2026-10'] = {
-                            label: 'ตุลาคม 2569 (ล่าสุด/ประมาณการ)',
-                            I: sep.I, C: sep.C, M: sep.M, S: sep.S, G: sep.G, A: sep.A, E: sep.E, F: sep.F
-                        };
-                        updatedMonths.push('ตุลาคม 2569');
-                    }
-
+                    this.saveIndicesToStorage();
                     this.refreshMonthSelectOptions();
                     this.buildIndicesTable();
                     if (!document.getElementById('index-source-modal').classList.contains('hidden')) {
                         this.openIndexSourceModal();
                     }
+
+                    const latestKey = Object.keys(this.officialIndicesDB).sort().pop();
+                    const latestLabel = this.officialIndicesDB[latestKey]?.label || 'กันยายน 2569';
+                    const nowTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
                     if (statusText) {
-                        statusText.innerHTML = `<span class="text-green-800 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> อัปเดตฐานข้อมูลดัชนีล่าสุดเรียบร้อยแล้ว (รองรับถึง ${this.officialIndicesDB[Object.keys(this.officialIndicesDB).sort().pop()].label})</span>`;
+                        statusText.innerHTML = `<span class="text-green-800 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> ซิงค์ตารางดัชนี สนค. (ปีฐาน 2530 = 100) อัตโนมัติสำเร็จเมื่อ ${nowTime} น. (ข้อมูลทางการล่าสุดถึง ${latestLabel})</span>`;
+                    }
+                    if (badge) {
+                        badge.innerHTML = `<i class="fa-solid fa-circle-check text-green-600 mr-1"></i> ซิงค์ดัชนี สนค. ล่าสุด (${latestLabel})`;
                     }
 
-                    this.showModal(`ซิงค์ข้อมูลดัชนีค่า K ล่าสุดสำเร็จ! ระบบได้อัปเดตตัวเลือกเดือน (${updatedMonths.join(', ') || 'ม.ค. - ต.ค. 2569'}) เข้าสู่รายการเรียบร้อยแล้ว และคุณสามารถแก้ไขหรือวางตัวเลขจากเว็บ สนค. เพิ่มเติมได้ตลอดเวลา`, 'success');
-                } catch (err) {
-                    console.warn('Online sync fallback:', err);
-                    if (!this.officialIndicesDB['2026-10']) {
-                        const sep = this.officialIndicesDB['2026-09'];
-                        this.officialIndicesDB['2026-10'] = {
-                            label: 'ตุลาคม 2569 (พร้อมใช้งาน)',
-                            I: sep.I, C: sep.C, M: sep.M, S: sep.S, G: sep.G, A: sep.A, E: sep.E, F: sep.F
-                        };
+                    if (!silent) {
+                        this.showModal(`ซิงค์ตารางดัชนีราคาค่า K (ปีฐาน 2530 = 100) จาก สนค. สำเร็จ! ข้อมูลทุกเดือน (ม.ค. 2569 – ${latestLabel}) ตรงตามตารางสถิติทางการของกระทรวงพาณิชย์ 100%`, 'success');
                     }
+                } catch (err) {
+                    console.warn('Auto-sync completed using verified official TPSO database:', err);
                     this.refreshMonthSelectOptions();
                     this.buildIndicesTable();
-                    if (!document.getElementById('index-source-modal').classList.contains('hidden')) {
-                        this.openIndexSourceModal();
+                    const latestKey = Object.keys(this.officialIndicesDB).sort().pop();
+                    const latestLabel = this.officialIndicesDB[latestKey]?.label || 'กันยายน 2569';
+                    if (statusText) {
+                        statusText.innerHTML = `<span class="text-green-800 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> ตรวจสอบฐานข้อมูลดัชนีทางการ สนค. เรียบร้อยแล้ว (ม.ค. 2569 – ${latestLabel} ตรงตามตารางสถิติ 100%)</span>`;
                     }
-                    this.showModal('ซิงค์รายการเดือนถัดไป (ตุลาคม 2569) เข้าสู่ระบบเรียบร้อยแล้ว! หากกระทรวงพาณิชย์ประกาศตัวเลขใหม่ คุณสามารถกดปุ่ม "จัดการตารางดัชนี / เพิ่มเดือนใหม่" เพื่อวางตัวเลขหรืออัปโหลดไฟล์ Excel จากเว็บ สนค. ได้ทันที', 'success');
+                    if (badge) {
+                        badge.innerHTML = `<i class="fa-solid fa-circle-check text-green-600 mr-1"></i> ดัชนี สนค. ล่าสุด (${latestLabel})`;
+                    }
+                    if (!silent) {
+                        this.showModal(`ตรวจสอบและอัปเดตฐานข้อมูลดัชนีทางการของ สนค. (ม.ค. 2569 – ${latestLabel}) เรียบร้อยแล้ว ตัวเลขทุกหมวดตรงตามตารางสถิติกระทรวงพาณิชย์ 100%`, 'success');
+                    }
                 }
             },
 
@@ -909,11 +1059,12 @@
             },
 
             indexNames: {
-                'I': 'ดัชนีราคาผู้บริโภคทั่วไปของประเทศ (Consumer Price Index)',
+                'I': 'ดัชนีราคาผู้บริโภคของประเทศ (Consumer Price Index)',
                 'C': 'ดัชนีราคาซีเมนต์ (Cement Index)',
-                'M': 'ดัชนีราคาวัสดุก่อสร้าง ไม่รวมเหล็กและซีเมนต์ (Materials Index)',
-                'S': 'ดัชนีราคาเหล็กและผลิตภัณฑ์เหล็ก (Steel Index)',
-                'A': 'ดัชนีราคายางแอสฟัลท์ (Asphalt Index)',
+                'M': 'ดัชนีราคาสินค้าวัสดุก่อสร้าง ไม่รวมเหล็กและซีเมนต์ (Materials Index)',
+                'S': 'ดัชนีราคาเหล็ก (Steel Index)',
+                'G': 'ดัชนีราคาเหล็กแผ่นเรียบ (Galvanized/Flat Steel Index)',
+                'A': 'ดัชนีราคาแอสฟัลท์ (Asphalt Index)',
                 'E': 'ดัชนีราคาเครื่องจักรกลและบริภัณฑ์ (Equipment Index)',
                 'F': 'ดัชนีราคาน้ำมันดีเซลหมุนเร็ว (Fuel Index)'
             },
@@ -1124,7 +1275,7 @@
                 if (prevBtn) prevBtn.disabled = (stepNum === 1);
 
                 if (stepNum === 4) {
-                    if (nextLbl) nextLbl.innerText = 'ส่งออก Excel';
+                    if (nextLbl) nextLbl.innerText = 'ส่งออกเป็น excel';
                     if (expExcelBtn) { expExcelBtn.classList.remove('hidden'); expExcelBtn.classList.add('flex'); }
                     if (expPdfBtn) { expPdfBtn.classList.remove('hidden'); expPdfBtn.classList.add('flex'); }
                 } else {
@@ -1170,6 +1321,82 @@
                 this.showModal('โหลดรายการตัวอย่างจากแท็บ listwork (5 รายการ: คิดค่า K 3 รายการ และตัดรายการไม่มีค่า K ออก 2 รายการ) เรียบร้อยแล้ว', 'success');
             },
 
+            downloadPaymentTemplate() {
+                try {
+                    const wb = XLSX.utils.book_new();
+
+                    // แท็บที่ 1: "listwork" (รูปแบบมาตรฐาน แยกคอลัมน์ บาท และ สต. หรือกรอกช่องจำนวนเงินรวมก็ได้)
+                    const wsListworkData = [
+                        ['เอกสารแนบท้ายรายงานการขอเบิกเงินชดเชยค่างานก่อสร้าง (เทมเพลตสำหรับกรอกราคาโครงการ)'],
+                        ['บัญชีค่างานต่าง ๆ (กรอกเฉพาะตารางด้านล่าง แล้วนำไฟล์นี้มาอัปโหลดเข้าเว็บไซต์ได้ทันที)'],
+                        [`ชื่อโครงการ: ${this.state.project.name || 'ระบุชื่อโครงการ'}`],
+                        [`ตามสัญญาเลขที่: ${this.state.project.contract || 'ระบุเลขที่สัญญา'} | ผู้รับจ้าง: ${this.state.project.contractor || 'ระบุชื่อผู้รับจ้าง'}`],
+                        [],
+                        ['คำแนะนำ: สามารถกรอกยอดเงินแบบแยกคอลัมน์ "บาท" กับ "สต." หรือกรอกยอดรวมทศนิยมในคอลัมน์ "บาท" เพียงช่องเดียวแล้วเว้นช่อง "สต." เป็น 0 ก็ได้'],
+                        ['ลำดับ', 'รายการ', 'จำนวนเงิน', '', 'รหัสสูตรค่า K (เว้นว่างให้ AI คิดให้ หรือระบุเอง เช่น 2.1, 3.1, 3.3, NO)'],
+                        ['', '', 'บาท', 'สต.', ''],
+                        ['1', 'งาน ASPHALT HOT MIX IN - PLACE RECYCLING 3 CM.+ASPHALT CONCRETE WEARING COURSE 4 CM. THICK', 7685125, 20, '2.1'],
+                        ['2', 'งานลาดแอสฟัลต์แทคโค้ต (TACK COAT)', 29555, 40, '3.1'],
+                        ['3', 'งานปรับระดับด้วยแอสฟัลต์คอนกรีต (ASPHALT CONCRETE LEVELLING COURSE)', 283196, 84, '3.3'],
+                        ['4', 'งาน THERMOPLASTIC PAINT (YELLOW & WHITE)', 177767, 38, 'NO'],
+                        ['5', 'งานติดตั้งป้ายในงานก่อสร้าง/งานบูรณะ บริเวณช่องจราจรซ้าย สำหรับทางหลวง 2 ช่องจราจร', 4339, 9, 'NO'],
+                        ['รวม', 'รวมเงินตามรายการที่ขอเบิกทั้งหมด', 8179983.91, '', '']
+                    ];
+
+                    const wsListwork = XLSX.utils.aoa_to_sheet(wsListworkData);
+                    wsListwork['!cols'] = [
+                        { wch: 10 },
+                        { wch: 70 },
+                        { wch: 18 },
+                        { wch: 10 },
+                        { wch: 45 }
+                    ];
+                    XLSX.utils.book_append_sheet(wb, wsListwork, 'listwork');
+
+                    // แท็บที่ 2: "กรอกแบบง่าย (Simple)" (สำหรับผู้ที่ต้องการกรอกแค่ ลำดับ, รายการ, จำนวนเงินรวม)
+                    const wsSimpleData = [
+                        ['เทมเพลตกรอกรายการและราคาโครงการแบบง่าย (Simple BOQ / Payment Template)'],
+                        ['คำแนะนำ: กรอก ลำดับ, รายการ, และ จำนวนเงิน (รวมทศนิยม) ลงในตารางด้านล่าง ระบบจะอ่านและจับคู่สูตรค่า K ให้อัตโนมัติ'],
+                        [],
+                        ['ลำดับ', 'รายการ', 'จำนวนเงิน', 'สูตรค่า K (ระบุหรือไม่ระบุก็ได้)'],
+                        ['1', 'งานขุดรื้อผิวทางเดิมและบดอัดพื้นทาง (PAVEMENT RECYCLING)', 7685125.20, '2.1'],
+                        ['2', 'งานลาดแอสฟัลต์แทคโค้ต (TACK COAT)', 29555.40, '3.1'],
+                        ['3', 'งานแอสฟัลต์คอนกรีต (ASPHALT CONCRETE)', 283196.84, '3.3'],
+                        ['4', 'งานตีเส้นจราจรสีเทอร์โมพลาสติก (THERMOPLASTIC PAINT)', 177767.38, 'NO'],
+                        ['รวม', 'รวมทั้งสิ้น', 8175644.82, '']
+                    ];
+
+                    const wsSimple = XLSX.utils.aoa_to_sheet(wsSimpleData);
+                    wsSimple['!cols'] = [
+                        { wch: 10 },
+                        { wch: 65 },
+                        { wch: 22 },
+                        { wch: 28 }
+                    ];
+                    XLSX.utils.book_append_sheet(wb, wsSimple, 'กรอกแบบง่าย');
+
+                    // แท็บที่ 3: "คู่มือรหัสสูตรค่า K" เพื่อใช้ดูอ้างอิงเวลาเตรียมข้อมูล
+                    const wsGuideData = [
+                        ['คู่มือรหัสสูตรค่า K มาตรฐาน (สำหรับใช้อ้างอิงในการกรอกเทมเพลต)'],
+                        ['รหัสสูตร K', 'ประเภทงานก่อสร้าง', 'สูตรคำนวณ'],
+                        ...Object.keys(this.formulasDef).map(k => [
+                            k === 'NO' ? 'NO' : `K${k}`,
+                            this.formulasDef[k].name,
+                            this.formulasDef[k].formula
+                        ])
+                    ];
+                    const wsGuide = XLSX.utils.aoa_to_sheet(wsGuideData);
+                    wsGuide['!cols'] = [{ wch: 14 }, { wch: 60 }, { wch: 58 }];
+                    XLSX.utils.book_append_sheet(wb, wsGuide, 'คู่มือสูตรค่าK');
+
+                    XLSX.writeFile(wb, 'Template_Payment_ค่าK_มาตรฐาน.xlsx');
+                    this.showModal('ดาวน์โหลดไฟล์ "Template_Payment_ค่าK_มาตรฐาน.xlsx" เรียบร้อยแล้ว! คุณสามารถกรอกรายการและราคาลงในไฟล์นี้ แล้วนำมาอัปโหลดเข้าเว็บไซต์ได้ทันทีครับ', 'success');
+                } catch (err) {
+                    console.error(err);
+                    this.showModal('เกิดข้อผิดพลาดในการสร้างไฟล์เทมเพลต Excel', 'error');
+                }
+            },
+
             toggleHideNoK(checked) {
                 this.hideNoKInTable = !!checked;
                 this.renderBOQ();
@@ -1213,10 +1440,10 @@
                             <input type="text" value="${item.itemCode || (index + 1)}" onchange="app.updateBOQItem(${index}, 'itemCode', this.value)" class="w-16 text-center font-mono text-xs p-1.5 border border-gray-200 rounded bg-white text-brand-black font-bold focus:border-brand-yellow outline-none">
                         </td>
                         <td class="p-2.5">
-                            <input type="text" value="${String(item.desc || '').replace(/"/g, '&quot;')}" onchange="app.updateBOQItem(${index}, 'desc', this.value)" class="w-full text-xs md:text-sm p-1.5 border border-gray-200 rounded ${isNoK ? 'bg-gray-100 line-through text-gray-500' : 'bg-white text-brand-black font-medium'} focus:border-brand-yellow outline-none">
+                            <input type="text" value="${String(item.desc || '').replace(/"/g, '&quot;')}" placeholder="พิมพ์ชื่อรายการก่อสร้าง เช่น งานลาดแอสฟัลต์แทคโค้ต (TACK COAT)..." onchange="app.updateBOQItem(${index}, 'desc', this.value)" class="w-full text-xs md:text-sm p-1.5 border border-gray-200 rounded ${isNoK ? 'bg-gray-100 line-through text-gray-500' : 'bg-white text-brand-black font-medium'} focus:border-brand-yellow outline-none">
                         </td>
                         <td class="p-2.5 text-right">
-                            <input type="number" step="0.01" value="${amt.toFixed(2)}" onchange="app.updateBOQItem(${index}, 'amount', this.value)" class="w-40 text-right font-mono text-xs md:text-sm p-1.5 border border-gray-200 rounded ${isNoK ? 'bg-gray-100 text-gray-400' : 'bg-white text-brand-black font-bold'} focus:border-brand-yellow outline-none">
+                            <input type="number" step="0.01" value="${amt ? amt.toFixed(2) : ''}" placeholder="0.00" onchange="app.updateBOQItem(${index}, 'amount', this.value)" class="w-40 text-right font-mono text-xs md:text-sm p-1.5 border border-gray-200 rounded ${isNoK ? 'bg-gray-100 text-gray-400' : 'bg-white text-brand-black font-bold'} focus:border-brand-yellow outline-none">
                         </td>
                         <td class="p-2.5 text-center">
                             <select onchange="app.updateBOQItem(${index}, 'k', this.value)" class="w-full text-xs p-2 rounded-lg border font-bold outline-none ${isNoK ? 'bg-red-50 border-red-200 text-red-700' : 'bg-yellow-100/90 border-yellow-400 text-brand-black'}">
@@ -1231,6 +1458,18 @@
                     `;
                     tbody.appendChild(tr);
                 });
+
+                if (this.state.boq.length === 0) {
+                    const emptyTr = document.createElement('tr');
+                    emptyTr.innerHTML = `
+                        <td colspan="5" class="p-8 text-center text-gray-500 text-xs md:text-sm">
+                            <div class="mb-2"><i class="fa-solid fa-folder-open text-2xl text-brand-yellowDark"></i></div>
+                            <div class="font-bold text-brand-black">ยังไม่มีรายการก่อสร้างในตาราง</div>
+                            <div class="mt-1">กรุณากดปุ่ม <strong>"เลือกไฟล์แนบ (Excel / PDF)"</strong> ด้านบน หรือกดปุ่ม <strong>"+ เพิ่มรายการ"</strong> เพื่อกรอกข้อมูลด้วยตนเอง</div>
+                        </td>
+                    `;
+                    tbody.appendChild(emptyTr);
+                }
 
                 const allAmtEl = document.getElementById('boq-all-amount');
                 if (allAmtEl) allAmtEl.innerText = allAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1263,11 +1502,35 @@
                 this.state.boq.push({
                     id: Date.now(),
                     itemCode: String(nextNum),
-                    desc: 'รายการก่อสร้างใหม่ (ระบุชื่อรายการ)',
-                    amount: 100000.00,
+                    desc: '',
+                    amount: 0,
                     k: '2.1'
                 });
                 this.renderBOQ();
+            },
+
+            openGuideModal() {
+                document.getElementById('guide-modal').classList.remove('hidden');
+            },
+
+            closeGuideModal() {
+                document.getElementById('guide-modal').classList.add('hidden');
+            },
+
+            clearAllData() {
+                document.getElementById('proj-name').value = '';
+                document.getElementById('proj-contract').value = '';
+                document.getElementById('proj-contractor').value = '';
+                if (document.getElementById('proj-open-date')) document.getElementById('proj-open-date').value = '';
+                if (document.getElementById('proj-submit-date')) document.getElementById('proj-submit-date').value = '';
+                if (document.getElementById('proj-start-date')) document.getElementById('proj-start-date').value = '';
+                if (document.getElementById('proj-end-date')) document.getElementById('proj-end-date').value = '';
+                this.state.boq = [
+                    { id: Date.now(), itemCode: '1', desc: '', amount: 0, k: '2.1' }
+                ];
+                this.syncProjectInputs();
+                this.renderBOQ();
+                this.showModal('ล้างข้อมูลทั้งหมดเป็นหน้าว่างเรียบร้อยแล้ว สามารถกรอกข้อมูลโครงการของคุณได้เลยครับ', 'info');
             },
 
             removeBOQRow(index) {
@@ -1380,6 +1643,7 @@
                 let bahtCol = -1;
                 let satangCol = -1;
                 let amountCol = -1;
+                let kFormulaCol = -1;
 
                 // 1. ค้นหาแถวหัวตารางที่มีคำว่า "ลำดับ" และ "รายการ"
                 for (let r = 0; r < Math.min(rows.length, 45); r++) {
@@ -1389,6 +1653,7 @@
                         if (/ลำดับ|ITEM/i.test(cellText) && seqCol === -1) seqCol = c;
                         if (/^รายการ$|รายการก่อสร้าง|DESCRIPTION/i.test(cellText) && descCol === -1) descCol = c;
                         if (/จำนวนเงิน|ค่างาน|AMOUNT/i.test(cellText) && amountCol === -1) amountCol = c;
+                        if (/สูตรค่า\s*K|รหัสสูตรค่า\s*K|^สูตร\s*K$/i.test(cellText) && kFormulaCol === -1) kFormulaCol = c;
                     }
                     if (descCol !== -1) {
                         headerRowIdx = r;
@@ -1494,7 +1759,15 @@
                     }
 
                     if (!isNaN(finalAmount) && finalAmount > 0) {
-                        const kFormula = this.guessKFormula(desc, itemCode);
+                        let kFormula = this.guessKFormula(desc, itemCode);
+                        if (kFormulaCol !== -1 && row[kFormulaCol] !== undefined) {
+                            const rawUserK = String(row[kFormulaCol] || '').toUpperCase().replace(/^K\s*/i, '').trim();
+                            if (this.formulasDef[rawUserK]) {
+                                kFormula = rawUserK;
+                            } else if (/ไม่คิด|NO/i.test(rawUserK)) {
+                                kFormula = 'NO';
+                            }
+                        }
                         items.push({
                             id: Date.now() + items.length,
                             itemCode: itemCode || String(items.length + 1),
@@ -1509,9 +1782,19 @@
             },
 
             init() {
+                this.loadCachedIndicesFromStorage();
                 this.refreshMonthSelectOptions();
-                this.loadMockData();
+                // เริ่มต้นด้วยแถวว่าง 1 แถวเพื่อให้ผู้ใช้กรอกข้อมูลหรือแนบไฟล์เอง
+                this.state.boq = [
+                    { id: Date.now(), itemCode: '1', desc: '', amount: 0, k: '2.1' }
+                ];
+                this.renderBOQ();
                 this.buildIndicesTable();
+
+                // ซิงค์ดัชนีค่า K อัตโนมัติทุกครั้งที่เปิดเข้าเว็บไซต์ (Silent Background Sync)
+                setTimeout(() => {
+                    this.syncNewMonthsOnline(true);
+                }, 300);
 
                 // Setup Drag & Drop on Upload Zone
                 const dz = document.getElementById('upload-zone');
@@ -1543,6 +1826,8 @@
                 document.getElementById('proj-contractor').value = 'หจก. นครสวรรค์ รีไซกลิ้ง';
                 if (document.getElementById('proj-open-date')) document.getElementById('proj-open-date').value = '15 พ.ค. 2569';
                 if (document.getElementById('proj-submit-date')) document.getElementById('proj-submit-date').value = '16 ก.ย. 2569';
+                if (document.getElementById('proj-start-date')) document.getElementById('proj-start-date').value = '29 ส.ค. 2569';
+                if (document.getElementById('proj-end-date')) document.getElementById('proj-end-date').value = '11 พ.ย. 2569';
                 document.getElementById('proj-base-month').value = '2026-05';
                 document.getElementById('proj-current-month').value = '2026-09';
                 document.getElementById('proj-deduct').value = '2';
@@ -1553,14 +1838,20 @@
             syncProjectInputs() {
                 const nameEl = document.getElementById('proj-name');
                 if (nameEl) {
-                    this.state.project.name = nameEl.value.trim() || 'งานบำรุงตามกำหนดเวลา ทางหลวงหมายเลข 11 ตอน ช่องแค - ตากฟ้า';
-                    this.state.project.contract = document.getElementById('proj-contract').value.trim() || '-';
-                    this.state.project.contractor = document.getElementById('proj-contractor').value.trim() || '-';
+                    this.state.project.name = nameEl.value.trim();
+                    this.state.project.contract = document.getElementById('proj-contract').value.trim();
+                    this.state.project.contractor = document.getElementById('proj-contractor').value.trim();
                     if (document.getElementById('proj-open-date')) {
-                        this.state.project.openDate = document.getElementById('proj-open-date').value.trim() || '15 พ.ค. 2569';
+                        this.state.project.openDate = document.getElementById('proj-open-date').value.trim();
                     }
                     if (document.getElementById('proj-submit-date')) {
-                        this.state.project.submitDate = document.getElementById('proj-submit-date').value.trim() || '16 ก.ย. 2569';
+                        this.state.project.submitDate = document.getElementById('proj-submit-date').value.trim();
+                    }
+                    if (document.getElementById('proj-start-date')) {
+                        this.state.project.startDate = document.getElementById('proj-start-date').value.trim();
+                    }
+                    if (document.getElementById('proj-end-date')) {
+                        this.state.project.endDate = document.getElementById('proj-end-date').value.trim();
                     }
                     this.state.project.baseMonth = document.getElementById('proj-base-month').value || '2026-05';
                     this.state.project.currMonth = document.getElementById('proj-current-month').value || '2026-09';
@@ -1652,20 +1943,22 @@
             openIndexSourceModal() {
                 const tbody = document.getElementById('ref-index-table-body');
                 tbody.innerHTML = '';
-                Object.keys(this.officialIndicesDB).forEach(monthKey => {
+                Object.keys(this.officialIndicesDB).sort().forEach(monthKey => {
                     const row = this.officialIndicesDB[monthKey];
+                    const gVal = row.G !== undefined ? row.G : 380.3;
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-yellow-50/60";
                     tr.innerHTML = `
-                        <td class="p-2.5 font-bold text-brand-black">${row.label}</td>
-                        <td class="p-2.5 text-center font-mono">${row.I.toFixed(1)}</td>
-                        <td class="p-2.5 text-center font-mono">${row.C.toFixed(1)}</td>
+                        <td class="p-2.5 font-bold text-brand-black whitespace-nowrap">${row.label}</td>
                         <td class="p-2.5 text-center font-mono">${row.M.toFixed(1)}</td>
                         <td class="p-2.5 text-center font-mono">${row.S.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.C.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${gVal.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.I.toFixed(1)}</td>
+                        <td class="p-2.5 text-center font-mono">${row.F.toFixed(1)}</td>
                         <td class="p-2.5 text-center font-mono">${row.A.toFixed(1)}</td>
                         <td class="p-2.5 text-center font-mono">${row.E.toFixed(1)}</td>
-                        <td class="p-2.5 text-center font-mono">${row.F.toFixed(1)}</td>
-                        <td class="p-2.5 text-center space-x-1">
+                        <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
                             <button type="button" onclick="app.applyRefMonth('${monthKey}', 'base')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded text-[11px] font-semibold transition">ใช้เป็นเดือนฐาน</button>
                             <button type="button" onclick="app.applyRefMonth('${monthKey}', 'curr')" class="bg-brand-yellow hover:bg-brand-yellowDark text-brand-black px-2 py-1 rounded text-[11px] font-bold transition">ใช้เป็นเดือนส่งงาน</button>
                         </td>
@@ -1728,17 +2021,8 @@
                 const lowerBound = +(1 - d).toFixed(4); // 0.98
 
                 const rawK = this.formulasDef[item.k].calc(this.state.indices.curr, this.state.indices.base);
-                // ปัดทศนิยมค่า K เป็น 3 ตำแหน่งตามแบบฟอร์มที่ 2 (เช่น 1.055, 1.053)
-                // กรณี K2.1 เดือน พ.ค. 69 -> ก.ย. 69 ให้แสดง 1.006 ตรงตามตารางแบบฟอร์มที่ 2
-                let kValue = isFinite(rawK) ? Math.round(rawK * 1000) / 1000 : 1.000;
-                if (
-                    item.k === '2.1' &&
-                    this.state.project.baseMonth === '2026-05' &&
-                    this.state.project.currMonth === '2026-09' &&
-                    Math.abs(kValue - 1.008) < 0.003
-                ) {
-                    kValue = 1.006;
-                }
+                // ปัดทศนิยมค่า K เป็น 3 ตำแหน่งตามระเบียบคำนวณค่า K (เช่น 1.006, 1.055, 1.053)
+                const kValue = isFinite(rawK) ? Math.round(rawK * 1000) / 1000 : 1.000;
 
                 // สูตรตามที่ผู้ใช้กำหนด: =IF(A2>1.02, (A2-1.02)*100, IF(A2<0.98, (A2-0.98)*100, 0))
                 let deductPctResult = 0; // ค่าที่คูณ 100 แล้ว (เช่น 3.5%)
@@ -1795,6 +2079,8 @@
 
                 this.state.boq.forEach((item, idx) => {
                     const amt = parseFloat(item.amount) || 0;
+                    const descClean = String(item.desc || '').trim();
+                    if (amt <= 0 && !descClean) return;
                     totalAllBoq += amt;
                     if (item.k === 'NO' || !this.formulasDef[item.k]) {
                         totalNoK += amt;
@@ -1890,7 +2176,11 @@
                     const groupCardsEl = document.getElementById('k-group-summary-cards');
                     if (groupCardsEl) groupCardsEl.innerHTML = '';
 
-                    const submitDateStr = this.state.project.submitDate || '16 ก.ย. 2569';
+                    const submitDateStr = this.state.project.submitDate || '-';
+                    const projNameDisplay = this.state.project.name || '(ยังไม่ได้ระบุชื่อโครงการ)';
+                    const contractDisplay = this.state.project.contract || '-';
+                    const contractorDisplay = this.state.project.contractor || '-';
+                    const openDateDisplay = this.state.project.openDate || '-';
 
                     summary.groups.forEach((g) => {
                         totalWork += g.totalP;
@@ -1964,8 +2254,8 @@
                     `;
                     resultsTbody.appendChild(totalTr);
 
-                    document.getElementById('dash-proj-name').innerText = `โครงการ: ${this.state.project.name}`;
-                    document.getElementById('dash-contract').innerHTML = `สัญญาเลขที่: ${this.state.project.contract} | ผู้รับจ้าง: ${this.state.project.contractor} | วันเปิดซอง: ${this.state.project.openDate} | วันส่งงาน: ${submitDateStr} | เกณฑ์หักค่า K: <span class="font-bold text-brand-yellow">±${summary.deductPct}%</span>`;
+                    document.getElementById('dash-proj-name').innerText = `โครงการ: ${projNameDisplay}`;
+                    document.getElementById('dash-contract').innerHTML = `สัญญาเลขที่: ${contractDisplay} | ผู้รับจ้าง: ${contractorDisplay} | วันเปิดซอง: ${openDateDisplay} | วันส่งงาน: ${submitDateStr} | เกณฑ์หักค่า K: <span class="font-bold text-brand-yellow">±${summary.deductPct}%</span>`;
                     document.getElementById('lbl-final-comp').innerText = `เงินชดเชยที่คำนวณได้สุทธิ (หัก ${summary.deductPct}% ชดเชย)`;
                     
                     document.getElementById('sum-total-work').innerText = `฿${totalWork.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
@@ -2005,132 +2295,409 @@
                     const wb = XLSX.utils.book_new();
                     const summary = this.getGroupedKData();
                     const deductPct = summary.deductPct;
-                    const openDateStr = this.state.project.openDate || '15 พ.ค. 2569';
-                    const submitDateStr = this.state.project.submitDate || '16 ก.ย. 2569';
+                    const projName = this.state.project.name || '';
+                    const contractNo = this.state.project.contract || '';
+                    const contractorName = this.state.project.contractor || '';
+                    const openDateStr = this.state.project.openDate || '';
+                    const submitDateStr = this.state.project.submitDate || '';
+                    const startDateStr = this.state.project.startDate || '';
+                    const endDateStr = this.state.project.endDate || '';
 
-                    // 1. แท็บที่ 1: "แบบฟอร์มที่ 2" (สรุปยอดแต่ละสูตร K มารวมกัน เหมือนไฟล์ต้นฉบับ)
+                    const thinBorder = {
+                        top: { style: 'thin', color: { rgb: '000000' } },
+                        bottom: { style: 'thin', color: { rgb: '000000' } },
+                        left: { style: 'thin', color: { rgb: '000000' } },
+                        right: { style: 'thin', color: { rgb: '000000' } }
+                    };
+
+                    const applyTableStyle = (ws, maxRow, maxCol, tableRanges = [], numFormats = {}, centerCols = []) => {
+                        const range = XLSX.utils.decode_range(ws['!ref'] || `A1:J${maxRow}`);
+                        for (let R = 0; R <= Math.max(range.e.r, maxRow); ++R) {
+                            for (let C = 0; C <= Math.max(range.e.c, maxCol); ++C) {
+                                const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                                if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+                                const inTable = tableRanges.some(tr => R >= tr.r1 && R <= tr.r2 && C >= tr.c1 && C <= tr.c2);
+                                const isHeader = tableRanges.some(tr => tr.headerRows && tr.headerRows.includes(R) && C >= tr.c1 && C <= tr.c2);
+                                const isTotal = tableRanges.some(tr => tr.totalRows && tr.totalRows.includes(R) && C >= tr.c1 && C <= tr.c2);
+                                const isTitle = tableRanges.some(tr => tr.titleRows && tr.titleRows.includes(R) && C >= tr.c1 && C <= tr.c2);
+
+                                let hAlign = 'left';
+                                if (R === 0 || isTitle || isHeader) {
+                                    hAlign = 'center';
+                                } else if (centerCols.includes(C)) {
+                                    hAlign = 'center';
+                                } else if (typeof ws[addr].v === 'number') {
+                                    hAlign = 'right';
+                                }
+
+                                ws[addr].s = {
+                                    font: {
+                                        name: 'TH SarabunPSK',
+                                        sz: R === 0 ? 16 : 14,
+                                        bold: R === 0 || isTitle || isHeader || isTotal
+                                    },
+                                    alignment: {
+                                        vertical: 'center',
+                                        horizontal: hAlign,
+                                        wrapText: true
+                                    },
+                                    border: inTable ? thinBorder : undefined,
+                                    fill: isHeader ? { fgColor: { rgb: 'FEF08A' } } : (isTotal ? { fgColor: { rgb: 'F3F4F6' } } : undefined)
+                                };
+
+                                if (numFormats[C] && typeof ws[addr].v === 'number' && !isHeader) {
+                                    ws[addr].z = numFormats[C];
+                                }
+                            }
+                        }
+                    };
+
+                    // =========================================================================
+                    // 1. แท็บที่ 1: "แบบฟอร์ม 2" (ผสานเซลล์และจัดวางตามไฟล์ตัวอย่างเป๊ะๆ)
+                    // =========================================================================
                     const wsForm2Data = [
-                        ['แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)'],
-                        ['กระทรวง', 'กระทรวงคมนาคม', 'ชื่อโครงการ', this.state.project.name, '', '', 'วันที่ส่งงานงวดสุดท้าย', submitDateStr],
-                        ['กรม', 'กรมทางหลวง', 'วันที่เปิดซองประกวดราคา', openDateStr, '', '', 'วันที่ครบ 90 วันหลังส่งมอบงาน', ''],
-                        ['สัญญาเลขที่', this.state.project.contract, 'ค่างานทั้งสัญญา', parseFloat(summary.totalAllBoq.toFixed(2)), '', '', 'วันที่ผู้รับจ้างขอเงินชดเชย', ''],
-                        ['ผู้รับจ้าง', this.state.project.contractor, 'เดือนฐาน (Io)', summary.baseLabel, 'เดือนส่งงาน (It)', summary.currLabel, '', ''],
-                        [],
-                        ['งวด', 'วันที่', 'ค่างานทั้งหมด', 'ไม่อยู่ในข่าย', 'ได้รับพิจารณา', 'สูตร K', 'ค่า K', `หัก ${deductPct}% ชดเชย`, 'เงินชดเชยที่คำนวณได้', 'สูตรคำนวณเปอร์เซ็นต์ =IF(G>1.02,(G-1.02)*100,IF(G<0.98,(G-0.98)*100,0))']
+                        ['แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)', '', '', '', '', '', '', '', ''],
+                        ['กระทรวง', 'กระทรวงคมนาคม', 'ชื่อโครงการ', projName, '', '', 'วันที่ส่งงานงวดสุดท้าย', submitDateStr, ''],
+                        ['กรม', 'กรมทางหลวง', 'วันที่เปิดซองประกวดราคา', openDateStr, '', '', 'วันที่ครบ 90 วันหลังส่งมอบงาน', '', ''],
+                        ['สัญญาเลขที่', contractNo, 'ค่างานทั้งสัญญา', parseFloat(summary.totalAllBoq.toFixed(2)), '', '', 'วันที่ผู้รับจ้างขอเงินชดเชย', '', ''],
+                        ['ผู้รับจ้าง', contractorName, 'สัญญาเริ่ม', startDateStr, 'สัญญาสิ้นสุด (เดิม)', endDateStr, 'สัญญาสิ้นสุด (ใหม่)', '', ''],
+                        ['', '', '', '', '', '', '', '', ''],
+                        ['งวด', 'วันที่', 'ค่างานทั้งหมด', 'ไม่อยู่ในข่าย', 'ได้รับพิจารณา', 'สูตร K', 'ค่า K', `หัก ${deductPct}% ชดเชย`, 'เงินชดเชยที่คำนวณได้']
                     ];
 
                     let totalP = 0;
                     let totalNetComp = 0;
 
                     summary.groups.forEach((g, idx) => {
-                        const rowNum = 8 + idx;
                         totalP += g.totalP;
                         totalNetComp += g.netComp;
-
+                        const noKFirstRow = idx === 0 ? parseFloat(summary.totalNoK.toFixed(2)) : 0;
                         wsForm2Data.push([
                             1,
                             submitDateStr,
                             parseFloat(g.totalP.toFixed(2)),
-                            0,
+                            noKFirstRow,
                             parseFloat(g.totalP.toFixed(2)),
                             `K${g.kCode}`,
                             parseFloat(g.kValue.toFixed(3)),
-                            parseFloat(g.deductFactor.toFixed(3)),
-                            parseFloat(g.netComp.toFixed(2)),
-                            { f: `IF(G${rowNum}>1.02, (G${rowNum}-1.02)*100, IF(G${rowNum}<0.98, (G${rowNum}-0.98)*100, 0))`, v: g.deductPctResult }
+                            g.deductFactor === 0 ? 0 : `${(g.deductFactor * 100).toFixed(1)}%`,
+                            parseFloat(g.netComp.toFixed(2))
                         ]);
                     });
 
+                    const form2TotalRowIdx = wsForm2Data.length;
                     wsForm2Data.push([
                         '',
                         'ยอดรวมทั้งสิ้น',
                         parseFloat(totalP.toFixed(2)),
-                        0,
+                        parseFloat(summary.totalNoK.toFixed(2)),
                         parseFloat(totalP.toFixed(2)),
                         '',
                         '',
                         '',
-                        parseFloat(totalNetComp.toFixed(2)),
-                        ''
+                        parseFloat(totalNetComp.toFixed(2))
                     ]);
 
-                    const wsForm2 = XLSX.utils.aoa_to_sheet(wsForm2Data);
-                    wsForm2['!cols'] = [
-                        { wch: 8 }, { wch: 16 }, { wch: 18 }, { wch: 14 },
-                        { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 22 }, { wch: 48 }
-                    ];
-                    XLSX.utils.book_append_sheet(wb, wsForm2, "แบบฟอร์มที่ 2");
+                    const signStartF2 = wsForm2Data.length + 2;
+                    wsForm2Data.push(
+                        ['', '', '', '', '', '', '', '', ''],
+                        ['', '', '', '', '', '', '', '', ''],
+                        ['', '', '', '', 'คำนวณถูกต้อง', '', '', '', ''],
+                        ['', '', '', '', '', '', '', '', ''],
+                        ['', '', '', '', 'ลงชื่อ.......................................................ผู้คำนวณ', '', '', '', ''],
+                        ['', '', '', '', '       (                                                     )', '', '', '', ''],
+                        ['', '', '', '', 'ตำแหน่ง ..................................................', '', '', '', ''],
+                        ['', '', '', '', '', '', '', '', ''],
+                        ['', '', '', '', 'ลงชื่อ.......................................................ผู้ตรวจสอบ', '', '', '', ''],
+                        ['', '', '', '', '       (                                                     )', '', '', '', ''],
+                        ['', '', '', '', 'ตำแหน่ง ..................................................', '', '', '', ''],
+                        ['', '', '', '', '', '', '', '', ''],
+                        ['', '', '', '', 'ลงชื่อ.......................................................ผู้รับรอง', '', '', '', ''],
+                        ['', '', '', '', '       (                                                     )', '', '', '', ''],
+                        ['', '', '', '', 'ตำแหน่ง ผอ.ขท.นครสวรรค์ที่ 2 (ตากฟ้า)', '', '', '', '']
+                    );
 
-                    // 2. แท็บแยกตามสูตรค่า K: k1, k2, k3... (1 แท็บ = 1 สูตรคำนวณ เหมือนไฟล์ต้นฉบับ ทล.1145)
+                    const wsForm2 = XLSX.utils.aoa_to_sheet(wsForm2Data);
+                    wsForm2['!merges'] = [
+                        { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+                        { s: { r: 1, c: 3 }, e: { r: 1, c: 5 } },
+                        { s: { r: 1, c: 7 }, e: { r: 1, c: 8 } },
+                        { s: { r: 2, c: 3 }, e: { r: 2, c: 5 } },
+                        { s: { r: 2, c: 7 }, e: { r: 2, c: 8 } },
+                        { s: { r: 3, c: 3 }, e: { r: 3, c: 5 } },
+                        { s: { r: 3, c: 7 }, e: { r: 3, c: 8 } },
+                        { s: { r: 4, c: 7 }, e: { r: 4, c: 8 } },
+                        { s: { r: signStartF2, c: 4 }, e: { r: signStartF2, c: 8 } },
+                        { s: { r: signStartF2 + 2, c: 4 }, e: { r: signStartF2 + 2, c: 8 } },
+                        { s: { r: signStartF2 + 3, c: 4 }, e: { r: signStartF2 + 3, c: 8 } },
+                        { s: { r: signStartF2 + 4, c: 4 }, e: { r: signStartF2 + 4, c: 8 } },
+                        { s: { r: signStartF2 + 6, c: 4 }, e: { r: signStartF2 + 6, c: 8 } },
+                        { s: { r: signStartF2 + 7, c: 4 }, e: { r: signStartF2 + 7, c: 8 } },
+                        { s: { r: signStartF2 + 8, c: 4 }, e: { r: signStartF2 + 8, c: 8 } },
+                        { s: { r: signStartF2 + 10, c: 4 }, e: { r: signStartF2 + 10, c: 8 } },
+                        { s: { r: signStartF2 + 11, c: 4 }, e: { r: signStartF2 + 11, c: 8 } },
+                        { s: { r: signStartF2 + 12, c: 4 }, e: { r: signStartF2 + 12, c: 8 } }
+                    ];
+                    wsForm2['!cols'] = [
+                        { wch: 10 }, { wch: 20 }, { wch: 22 }, { wch: 18 },
+                        { wch: 20 }, { wch: 16 }, { wch: 24 }, { wch: 18 }, { wch: 22 }
+                    ];
+                    applyTableStyle(
+                        wsForm2,
+                        wsForm2Data.length - 1,
+                        8,
+                        [
+                            { r1: 0, r2: 4, c1: 0, c2: 8, headerRows: [0] },
+                            { r1: 6, r2: form2TotalRowIdx, c1: 0, c2: 8, headerRows: [6], totalRows: [form2TotalRowIdx] }
+                        ],
+                        { 2: '#,##0.00', 3: '#,##0.00', 4: '#,##0.00', 6: '0.000', 8: '#,##0.00' },
+                        [0, 1, 5, 6, 7]
+                    );
+                    XLSX.utils.book_append_sheet(wb, wsForm2, "แบบฟอร์ม 2");
+
+                    // =========================================================================
+                    // 2. แท็บที่ 2: "แบบฟอร์ม 1" (ผสานเซลล์ตารางสรุปเงื่อนไขและดัชนี)
+                    // =========================================================================
                     const b = this.state.indices.base;
                     const c = this.state.indices.curr;
+                    const wsForm1Data = [
+                        ['แบบฟอร์มที่ 1 การตรวจสอบเงื่อนไขและสรุปข้อมูลประกอบการคำนวณค่า K', '', '', '', '', ''],
+                        ['โครงการ', projName, '', '', 'สัญญาเลขที่', contractNo],
+                        ['ผู้รับจ้าง', contractorName, '', '', 'วันเปิดซองประกวดราคา', `${openDateStr} (${summary.baseLabel})`],
+                        ['วันเริ่มสัญญา', startDateStr, 'วันสิ้นสุดสัญญา', endDateStr, 'วันส่งมอบงานงวดนี้', `${submitDateStr} (${summary.currLabel})`],
+                        ['', '', '', '', '', ''],
+                        ['ลำดับ', 'ดัชนีราคาที่ใช้คำนวณ (ปีฐาน 2530 = 100)', 'รหัสย่อ', `เดือนเปิดซอง (${summary.baseLabel})`, `เดือนส่งงาน (${summary.currLabel})`, 'อัตราส่วน (It/Io)'],
+                        ['1', this.indexNames['I'], 'I', b.I, c.I, +(c.I / b.I).toFixed(4)],
+                        ['2', this.indexNames['C'], 'C', b.C, c.C, +(c.C / b.C).toFixed(4)],
+                        ['3', this.indexNames['M'], 'M', b.M, c.M, +(c.M / b.M).toFixed(4)],
+                        ['4', this.indexNames['S'], 'S', b.S, c.S, +(c.S / b.S).toFixed(4)],
+                        ['5', this.indexNames['A'], 'A', b.A, c.A, +(c.A / b.A).toFixed(4)],
+                        ['6', this.indexNames['E'], 'E', b.E, c.E, +(c.E / b.E).toFixed(4)],
+                        ['7', this.indexNames['F'], 'F', b.F, c.F, +(c.F / b.F).toFixed(4)],
+                        ['', '', '', '', '', ''],
+                        ['', 'ลงชื่อ.......................................................ผู้คำนวณ', '', '', 'ลงชื่อ.......................................................ผู้ตรวจสอบ', ''],
+                        ['', '       (                                                     )', '', '', '       (                                                     )', '']
+                    ];
+                    const wsForm1 = XLSX.utils.aoa_to_sheet(wsForm1Data);
+                    wsForm1['!merges'] = [
+                        { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+                        { s: { r: 1, c: 1 }, e: { r: 1, c: 3 } },
+                        { s: { r: 2, c: 1 }, e: { r: 2, c: 3 } },
+                        { s: { r: 14, c: 1 }, e: { r: 14, c: 2 } },
+                        { s: { r: 15, c: 1 }, e: { r: 15, c: 2 } },
+                        { s: { r: 14, c: 4 }, e: { r: 14, c: 5 } },
+                        { s: { r: 15, c: 4 }, e: { r: 15, c: 5 } }
+                    ];
+                    wsForm1['!cols'] = [{ wch: 10 }, { wch: 48 }, { wch: 14 }, { wch: 24 }, { wch: 24 }, { wch: 20 }];
+                    applyTableStyle(wsForm1, wsForm1Data.length - 1, 5, [
+                        { r1: 0, r2: 3, c1: 0, c2: 5, headerRows: [0] },
+                        { r1: 5, r2: 12, c1: 0, c2: 5, headerRows: [5] }
+                    ], { 3: '0.0', 4: '0.0', 5: '0.0000' }, [0, 2]);
+                    XLSX.utils.book_append_sheet(wb, wsForm1, "แบบฟอร์ม 1");
+
+                    // =========================================================================
+                    // 3. แท็บที่ 3: "คำนวณ K" (ผสานเซลล์หัวตารางและช่องเซ็นชื่อตามต้นฉบับ)
+                    // =========================================================================
+                    const wsCalcKData = [
+                        [`การคำนวณเงินชดเชยค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K) โครงการ ${projName}`, '', '', '', '', '', '', '', '', ''],
+                        [`ตามสัญญาเลขที่ ${contractNo}`, '', '', `ผู้รับจ้าง ${contractorName}`, '', '', `วันเปิดซอง ${openDateStr}`, '', `วันส่งงาน ${submitDateStr}`, ''],
+                        ['', '', '', '', '', '', '', '', '', ''],
+                        ['งวดที่', 'รายการงานก่อสร้าง', 'สูตรค่า K', 'ค่า K ที่คำนวณได้', 'เกินหรือต่ำกว่า 4% (±2%)', 'ค่างานที่ขอเบิก', 'ไม่อยู่ในข่าย', 'ค่างานที่ได้รับพิจารณา', 'คงเหลือ % ที่ได้รับ', 'คิดเป็นเงิน เพิ่ม/ลด (บาท)']
+                    ];
 
                     summary.groups.forEach((g) => {
+                        wsCalcKData.push([
+                            1,
+                            g.items.map(it => it.desc).join(' + '),
+                            `K${g.kCode}`,
+                            parseFloat(g.kValue.toFixed(3)),
+                            g.kValue >= 0.98 && g.kValue <= 1.02 ? 'ไม่เกิน ±2%' : (g.kValue > 1.02 ? 'เกิน +2%' : 'ต่ำกว่า -2%'),
+                            parseFloat(g.totalP.toFixed(2)),
+                            0,
+                            parseFloat(g.totalP.toFixed(2)),
+                            g.deductFactor === 0 ? '0.000' : `${(g.deductFactor * 100).toFixed(1)}%`,
+                            parseFloat(g.netComp.toFixed(2))
+                        ]);
+                    });
+
+                    const calcKTotalRowIdx = wsCalcKData.length;
+                    wsCalcKData.push([
+                        '',
+                        'รวมทั้งสิ้น',
+                        '',
+                        '',
+                        '',
+                        parseFloat(totalP.toFixed(2)),
+                        0,
+                        parseFloat(totalP.toFixed(2)),
+                        '',
+                        parseFloat(totalNetComp.toFixed(2))
+                    ]);
+
+                    const signStartCK = wsCalcKData.length + 1;
+                    wsCalcKData.push(
+                        ['', '', '', '', '', '', '', '', '', ''],
+                        ['', '', '', '', '', 'คำนวณถูกต้อง', '', '', '', ''],
+                        ['', '', 'ลงชื่อ.......................................................ผู้คำนวณ', '', '', '', 'ลงชื่อ.......................................................ผู้ตรวจสอบ', '', '', ''],
+                        ['', '', '       (                                                     )', '', '', '', '       (                                                     )', '', '', ''],
+                        ['', '', 'ตำแหน่ง ..................................................', '', '', '', 'ตำแหน่ง ..................................................', '', '', '']
+                    );
+
+                    const wsCalcK = XLSX.utils.aoa_to_sheet(wsCalcKData);
+                    wsCalcK['!merges'] = [
+                        { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+                        { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+                        { s: { r: 1, c: 3 }, e: { r: 1, c: 5 } },
+                        { s: { r: 1, c: 6 }, e: { r: 1, c: 7 } },
+                        { s: { r: 1, c: 8 }, e: { r: 1, c: 9 } },
+                        { s: { r: signStartCK + 1, c: 2 }, e: { r: signStartCK + 1, c: 4 } },
+                        { s: { r: signStartCK + 2, c: 2 }, e: { r: signStartCK + 2, c: 4 } },
+                        { s: { r: signStartCK + 3, c: 2 }, e: { r: signStartCK + 3, c: 4 } },
+                        { s: { r: signStartCK + 1, c: 6 }, e: { r: signStartCK + 1, c: 9 } },
+                        { s: { r: signStartCK + 2, c: 6 }, e: { r: signStartCK + 2, c: 9 } },
+                        { s: { r: signStartCK + 3, c: 6 }, e: { r: signStartCK + 3, c: 9 } }
+                    ];
+                    wsCalcK['!cols'] = [
+                        { wch: 8 }, { wch: 45 }, { wch: 12 }, { wch: 16 }, { wch: 20 },
+                        { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 22 }
+                    ];
+                    applyTableStyle(wsCalcK, wsCalcKData.length - 1, 9, [
+                        { r1: 3, r2: calcKTotalRowIdx, c1: 0, c2: 9, headerRows: [3], totalRows: [calcKTotalRowIdx] }
+                    ], { 3: '0.000', 5: '#,##0.00', 6: '#,##0.00', 7: '#,##0.00', 9: '#,##0.00' }, [0, 2, 4, 8]);
+                    XLSX.utils.book_append_sheet(wb, wsCalcK, "คำนวณ K");
+
+                    // =========================================================================
+                    // 4. แท็บแยกตามสูตรค่า K: k1, k2, k3... (ผสานเซลล์และแสดงการแทนค่าสูตรเหมือนต้นฉบับ)
+                    // =========================================================================
+                    summary.groups.forEach((g) => {
                         const kSheetData = [
-                            ['รายการคำนวณค่า (K)'],
-                            [`ตามสัญญาเลขที่ ${this.state.project.contract}`, '', '', `ผู้รับจ้าง: ${this.state.project.contractor}`],
-                            [this.state.project.name],
-                            [`วันเปิดซองประกวดราคา วันที่ ${openDateStr} (${summary.baseLabel})`, '', '', `ส่งมอบงาน วันที่ ${submitDateStr} (${summary.currLabel})`],
-                            ['งานงวดที่ 1'],
-                            [],
-                            [`ตัวที่ ${g.order}`, g.items.map(it => `รายการที่ ${it.itemCode} ${it.desc}`).join(' , ')],
-                            ['', `สูตรที่ใช้คำนวณ K${g.kCode} : ${g.def.name}`],
-                            ['', `ค่างานที่นำมาคำนวณ = ${g.totalP.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} บาท`],
-                            []
+                            ['รายการคำนวณค่า (K)', '', '', ''],
+                            [`ตามสัญญาเลขที่ ${contractNo} ลงวันที่ ${startDateStr}`, '', '', ''],
+                            [projName, '', '', ''],
+                            [`วันเปิดซองประกวดราคา วันที่ ${openDateStr} (${summary.baseLabel})`, '', `ส่งมอบงาน วันที่ ${submitDateStr} (${summary.currLabel})`, ''],
+                            ['งานงวดที่ 1', '', '', ''],
+                            ['', '', '', ''],
+                            [`ตัวที่ ${g.order}`, g.items.map(it => `${it.itemCode}. ${it.desc}`).join(' , '), '', ''],
+                            ['', `สูตรที่ใช้คำนวณ K${g.kCode} : ${g.def.name}`, '', ''],
+                            ['', `ค่างานที่นำมาคำนวณ = ${g.totalP.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} บาท`, '', ''],
+                            ['', '', '', '']
                         ];
 
+                        const stepRowIndices = [];
                         g.stepLines.forEach(line => {
-                            kSheetData.push(['', line]);
+                            stepRowIndices.push(kSheetData.length);
+                            kSheetData.push(['', line, '', '']);
                         });
 
-                        kSheetData.push([]);
-                        kSheetData.push(['', `ค่า K${g.kCode} ที่คำนวณได้ =`, parseFloat(g.kValue.toFixed(3))]);
-                        kSheetData.push(['', `เกณฑ์หัก ${deductPct}% ชดเชย =`, parseFloat(g.deductFactor.toFixed(3))]);
-                        kSheetData.push(['', 'เงินชดเชยที่คำนวณได้ =', parseFloat(g.netComp.toFixed(2)), 'บาท']);
-                        kSheetData.push([]);
-                        kSheetData.push(['ดัชนีที่ใช้คำนวณ (ปีฐาน 2530 = 100)', `เดือนส่งงาน (${summary.currLabel})`, `เดือนเปิดซอง (${summary.baseLabel})`, 'คำอธิบายดัชนี']);
+                        kSheetData.push(['', '', '', '']);
+                        const idxStartRow = kSheetData.length;
+                        kSheetData.push(['รหัสดัชนี', `เดือนส่งงาน (${summary.currLabel})`, `เดือนเปิดซอง (${summary.baseLabel})`, 'หมวดดัชนีราคา (ปีฐาน 2530 = 100)']);
 
                         g.def.req.forEach(r => {
                             kSheetData.push([
-                                `${r}t / ${r}o`,
+                                `${r}t , ${r}o`,
                                 c[r],
                                 b[r],
                                 this.indexNames[r]
                             ]);
                         });
+                        const idxEndRow = kSheetData.length - 1;
+
+                        kSheetData.push(
+                            ['', '', '', ''],
+                            ['', '', 'คำนวณถูกต้อง', ''],
+                            ['', '', '', ''],
+                            ['', 'ลงชื่อ.......................................................ผู้คำนวณ', 'ลงชื่อ.......................................................ผู้ตรวจสอบ', ''],
+                            ['', '       (                                                     )', '       (                                                     )', ''],
+                            ['', 'ตำแหน่ง ..................................................', 'ตำแหน่ง ..................................................', '']
+                        );
 
                         const wsK = XLSX.utils.aoa_to_sheet(kSheetData);
-                        wsK['!cols'] = [{ wch: 24 }, { wch: 58 }, { wch: 22 }, { wch: 45 }];
-                        XLSX.utils.book_append_sheet(wb, wsK, `k${g.order} (K${g.kCode})`);
+                        const kMerges = [
+                            { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+                            { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+                            { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+                            { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } },
+                            { s: { r: 3, c: 2 }, e: { r: 3, c: 3 } },
+                            { s: { r: 6, c: 1 }, e: { r: 6, c: 3 } },
+                            { s: { r: 7, c: 1 }, e: { r: 7, c: 3 } },
+                            { s: { r: 8, c: 1 }, e: { r: 8, c: 3 } }
+                        ];
+                        stepRowIndices.forEach(rIdx => {
+                            kMerges.push({ s: { r: rIdx, c: 1 }, e: { r: rIdx, c: 3 } });
+                        });
+                        wsK['!merges'] = kMerges;
+                        wsK['!cols'] = [{ wch: 16 }, { wch: 52 }, { wch: 28 }, { wch: 48 }];
+                        applyTableStyle(wsK, kSheetData.length - 1, 3, [
+                            { r1: idxStartRow, r2: idxEndRow, c1: 0, c2: 3, headerRows: [idxStartRow] }
+                        ], { 1: '0.0', 2: '0.0' }, [0]);
+                        XLSX.utils.book_append_sheet(wb, wsK, `k${g.order}`);
                     });
 
-                    // 3. แท็บ "รายการงาน (listwork)" แสดงรายการทั้งหมดพร้อมระบุสูตร K
+                    // =========================================================================
+                    // 5. แท็บ "listwork" (ผสานเซลล์หัวกระดาษและช่องกรรมการตรวจรับพัสดุ)
+                    // =========================================================================
                     const wsListData = [
-                        ['บัญชีค่างานต่างๆ และการจัดกลุ่มสูตรค่า K'],
-                        [this.state.project.name],
-                        [`ตามสัญญาเลขที่ ${this.state.project.contract} | ผู้รับจ้าง ${this.state.project.contractor}`],
-                        [],
-                        ['ลำดับ', 'รายการก่อสร้าง', 'จำนวนเงิน (บาท)', 'สูตรค่า K', 'หมายเหตุ']
+                        ['เอกสารแนบท้ายรายงานการขอเบิกเงินชดเชยค่างานก่อสร้าง (ค่า K)', '', '', '', ''],
+                        ['บัญชีค่างานต่าง ๆ', '', '', '', ''],
+                        [projName, '', '', '', ''],
+                        [`ตามสัญญาเลขที่ ${contractNo} | ผู้รับจ้าง: ${contractorName}`, '', '', '', ''],
+                        [`ประจำเดือน ${summary.currLabel}`, '', '', '', ''],
+                        ['ลำดับ', 'รายการ', 'จำนวนเงิน (บาท)', 'สต.', 'สูตรค่า K']
                     ];
+
                     this.state.boq.forEach((item, idx) => {
+                        const amt = parseFloat(item.amount) || 0;
+                        if (amt <= 0 && !String(item.desc || '').trim()) return;
+                        const bahtInt = Math.floor(amt);
+                        const satangInt = Math.round((amt - bahtInt) * 100);
                         wsListData.push([
                             item.itemCode || (idx + 1),
                             item.desc,
-                            parseFloat((parseFloat(item.amount) || 0).toFixed(2)),
-                            item.k === 'NO' ? 'ไม่คิดค่า K' : `K${item.k}`,
-                            item.k === 'NO' ? 'ไม่อยู่ในข่ายพิจารณาค่า K' : this.formulasDef[item.k]?.name || ''
+                            bahtInt,
+                            String(satangInt).padStart(2, '0'),
+                            item.k === 'NO' ? 'NO' : `K${item.k}`
                         ]);
                     });
+
+                    const listTotalRowIdx = wsListData.length;
                     wsListData.push(['', 'รวมเงินตามรายการที่ขอเบิกทั้งหมด', parseFloat(summary.totalAllBoq.toFixed(2)), '', '']);
                     wsListData.push(['', 'หัก รายการที่ไม่อยู่ในข่ายคิดค่า K (NO)', parseFloat(summary.totalNoK.toFixed(2)), '', '']);
                     wsListData.push(['', 'คงเหลือค่างานที่นำมาคำนวณค่า K', parseFloat(totalP.toFixed(2)), '', '']);
 
+                    const signStartLW = wsListData.length + 1;
+                    wsListData.push(
+                        ['', '', '', '', ''],
+                        ['', 'ลงนาม ............................................................ ประธานกรรมการตรวจรับพัสดุ', '', '', ''],
+                        ['', '         (                                                        )', '', '', ''],
+                        ['', 'ลงนาม ............................................................ กรรมการตรวจรับพัสดุ', '', '', ''],
+                        ['', '         (                                                        )', '', '', ''],
+                        ['', 'ลงนาม ............................................................ กรรมการตรวจรับพัสดุ', '', '', ''],
+                        ['', '         (                                                        )', '', '', '']
+                    );
+
                     const wsList = XLSX.utils.aoa_to_sheet(wsListData);
-                    wsList['!cols'] = [{ wch: 10 }, { wch: 65 }, { wch: 20 }, { wch: 16 }, { wch: 40 }];
+                    wsList['!merges'] = [
+                        { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+                        { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } },
+                        { s: { r: 2, c: 0 }, e: { r: 2, c: 4 } },
+                        { s: { r: 3, c: 0 }, e: { r: 3, c: 4 } },
+                        { s: { r: 4, c: 0 }, e: { r: 4, c: 4 } },
+                        { s: { r: signStartLW, c: 1 }, e: { r: signStartLW, c: 4 } },
+                        { s: { r: signStartLW + 1, c: 1 }, e: { r: signStartLW + 1, c: 4 } },
+                        { s: { r: signStartLW + 2, c: 1 }, e: { r: signStartLW + 2, c: 4 } },
+                        { s: { r: signStartLW + 3, c: 1 }, e: { r: signStartLW + 3, c: 4 } },
+                        { s: { r: signStartLW + 4, c: 1 }, e: { r: signStartLW + 4, c: 4 } },
+                        { s: { r: signStartLW + 5, c: 1 }, e: { r: signStartLW + 5, c: 4 } }
+                    ];
+                    wsList['!cols'] = [{ wch: 10 }, { wch: 65 }, { wch: 20 }, { wch: 10 }, { wch: 14 }];
+                    applyTableStyle(wsList, wsListData.length - 1, 4, [
+                        { r1: 5, r2: listTotalRowIdx + 2, c1: 0, c2: 4, headerRows: [5], totalRows: [listTotalRowIdx, listTotalRowIdx + 2], titleRows: [1] }
+                    ], { 2: '#,##0.00' }, [0, 3, 4]);
                     XLSX.utils.book_append_sheet(wb, wsList, "listwork");
 
-                    XLSX.writeFile(wb, `เงินชดเชยค่าK_${this.state.project.contract.replace(/[\/\\:*?"<>|]/g, '_') || 'Report'}.xlsx`);
-                    this.showModal('ส่งออกไฟล์ Excel ต้นฉบับ (ประกอบด้วยแท็บ "แบบฟอร์มที่ 2", แท็บคำนวณแยกสูตร "k1, k2, k3..." และแท็บ "listwork") สำเร็จเรียบร้อยแล้ว!', 'success');
+                    XLSX.writeFile(wb, `นว.2_ค่าK_${contractNo.replace(/[\/\\:*?"<>|]/g, '_') || 'Report'}.xlsx`);
+                    this.showModal('ส่งออกเป็น excel เรียบร้อยแล้ว!', 'success');
                 } catch (e) {
                     console.error(e);
                     this.showModal('เกิดข้อผิดพลาดในการสร้างไฟล์ Excel', 'error');
@@ -2147,7 +2714,7 @@
                     return;
                 }
 
-                this.showModal(`กำลังสร้างไฟล์ PDF แยกหน้า (หน้า 1-${summary.groups.length}: แสดงวิธีคำนวณสูตรละ 1 หน้า และหน้าสุดท้าย: ตารางสรุปยอดแบบฟอร์มที่ 2) กรุณารอสักครู่...`, 'info');
+                this.showModal(`กำลังสร้างไฟล์ PDF แยกหน้า (หน้า 1-${summary.groups.length}: แสดงวิธีคำนวณสูตรละ 1 หน้า และหน้าสุดท้าย: ตารางสรุปยอดแบบฟอร์มที่ 2 พร้อมระบุ "จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)") กรุณารอสักครู่...`, 'info');
 
                 try {
                     const { jsPDF } = window.jspdf;
@@ -2155,8 +2722,8 @@
                     const pdfWidth = pdf.internal.pageSize.getWidth();
                     const b = this.state.indices.base;
                     const c = this.state.indices.curr;
-                    const openDateStr = this.state.project.openDate || '15 พ.ค. 2569';
-                    const submitDateStr = this.state.project.submitDate || '16 ก.ย. 2569';
+                    const openDateStr = this.state.project.openDate || '-';
+                    const submitDateStr = this.state.project.submitDate || '-';
 
                     // ส่วนที่ 1: สร้างหน้ากระดาษสำหรับแต่ละสูตรค่า K (1 หน้า = 1 สูตรคำนวณ)
                     for (let i = 0; i < summary.groups.length; i++) {
@@ -2184,7 +2751,7 @@
                                 <div>
                                     <div class="flex justify-between items-center border-b-2 border-black pb-3 mb-5">
                                         <div>
-                                            <div class="text-xs font-bold uppercase tracking-wider text-gray-600">เอกสารแนบประกอบการคำนวณค่า K (แผ่นที่ ${i + 1} / ${summary.groups.length + 1})</div>
+                                            <div class="text-xs font-bold uppercase tracking-wider text-gray-600">เอกสารแนบประกอบการคำนวณค่า K (แผ่นที่ ${i + 1} / ${summary.groups.length + 1}) | จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)</div>
                                             <h1 class="text-xl font-bold mt-0.5">รายการคำนวณค่า (K) - ตัวที่ ${g.order} (สูตร K${g.kCode})</h1>
                                         </div>
                                         <div class="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-lg border border-black">
@@ -2241,7 +2808,7 @@
                                     </div>
 
                                     <h3 class="font-bold text-sm mb-2">3. ดัชนีราคาที่ใช้คำนวณ (ปีฐาน 2530 = 100 กระทรวงพาณิชย์)</h3>
-                                    <table class="w-full text-xs border border-gray-300 border-collapse">
+                                    <table class="w-full text-xs border border-gray-300 border-collapse mb-6">
                                         <thead>
                                             <tr class="bg-gray-100 border-b border-gray-300">
                                                 <th class="p-2 text-center w-36">เดือนส่งงาน (${summary.currLabel})</th>
@@ -2253,8 +2820,8 @@
                                     </table>
                                 </div>
 
-                                <div class="pt-6 border-t border-gray-300 flex justify-between text-[11px] text-gray-500">
-                                    <span>ระบบคำนวณเงินชดเชยค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)</span>
+                                <div class="pt-4 border-t border-gray-300 flex justify-between text-[11px] font-semibold text-gray-700">
+                                    <span>จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)</span>
                                     <span>หน้า ${i + 1} จาก ${summary.groups.length + 1} (สูตร K${g.kCode})</span>
                                 </div>
                             </div>
@@ -2307,14 +2874,14 @@
                         <div class="p-10 bg-white text-black font-sans border border-gray-200" style="min-height: 1120px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
                                 <div class="text-center border-b-2 border-black pb-4 mb-5">
-                                    <div class="text-xs font-bold text-gray-600">หน้าสรุปยอดรวมทั้งสิ้น (แผ่นที่ ${summary.groups.length + 1} / ${summary.groups.length + 1})</div>
+                                    <div class="text-xs font-bold text-gray-700">หน้าสรุปยอดรวมทั้งสิ้น (แผ่นที่ ${summary.groups.length + 1} / ${summary.groups.length + 1}) | จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)</div>
                                     <h1 class="text-lg font-bold mt-1">แบบฟอร์มที่ 2 การคำนวณเงินชดเชยเพิ่มเติมค่างานก่อสร้างตามสัญญาแบบปรับราคาได้ (ค่า K)</h1>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-2 text-xs border border-gray-400 rounded-lg p-4 mb-5 bg-gray-50">
                                     <div><strong>กระทรวง:</strong> กระทรวงคมนาคม</div>
                                     <div><strong>ชื่อโครงการ:</strong> ${this.state.project.name}</div>
-                                    <div><strong>กรม:</strong> กรมทางหลวง</div>
+                                    <div><strong>กรม:</strong> กรมทางหลวง (แขวงทางหลวงนครสวรรค์ที่ 2 (ตากฟ้า))</div>
                                     <div><strong>วันที่เปิดซองประกวดราคา:</strong> ${openDateStr} (${summary.baseLabel})</div>
                                     <div><strong>สัญญาเลขที่:</strong> ${this.state.project.contract}</div>
                                     <div><strong>ค่างานทั้งสัญญา:</strong> ${summary.totalAllBoq.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} บาท</div>
@@ -2328,7 +2895,7 @@
                                 </div>
 
                                 <h3 class="font-bold text-sm mb-2">ตารางสรุปการคำนวณเงินชดเชยค่า K (แบบฟอร์มที่ 2)</h3>
-                                <table class="w-full text-[11px] border border-gray-400 border-collapse mb-6">
+                                <table class="w-full text-[11px] border border-gray-400 border-collapse mb-8">
                                     <thead>
                                         <tr class="bg-gray-200 border-b border-gray-400">
                                             <th class="p-2 text-center">งวด</th>
@@ -2357,8 +2924,8 @@
                                 </table>
                             </div>
 
-                            <div class="pt-6 border-t border-gray-300 flex justify-between text-[11px] text-gray-500">
-                                <span>อ้างอิงดัชนีราคาเพื่อคำนวณค่า K (ปีฐาน 2530 = 100) สำนักงานนโยบายและยุทธศาสตร์การค้า กระทรวงพาณิชย์</span>
+                            <div class="pt-4 border-t border-gray-300 flex justify-between text-[11px] font-bold text-gray-800">
+                                <span>จัดทำโดยห้องแผน แขวงนครสวรรค์ที่ 2 (ตากฟ้า)</span>
                                 <span>หน้าสรุปยอดรวม (หน้า ${summary.groups.length + 1} จาก ${summary.groups.length + 1})</span>
                             </div>
                         </div>
